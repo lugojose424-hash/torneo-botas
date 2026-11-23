@@ -6,9 +6,14 @@ import {
   StandingRow,
   Team,
   TimeSlot,
+  TournamentCategory,
   TournamentConfig,
   TournamentState,
 } from '../types/tournament';
+
+export function getCategoryLabel(category: TournamentCategory): string {
+  return category === 'FEMENINO' ? 'Categoría Femenina' : 'Categoría Masculina';
+}
 
 export const STORAGE_KEY = 'apc_turmero_bolas_criollas_v1';
 
@@ -100,7 +105,11 @@ export function addValidDays(dateObj: Date, steps: number, allowedDays: number[]
   return d;
 }
 
-export function generateBalancedSchedule(teams: Team[], config: TournamentConfig): Match[] {
+export function generateBalancedSchedule(
+  teams: Team[],
+  config: TournamentConfig,
+  category: TournamentCategory = 'MASCULINO'
+): Match[] {
   const n = teams.length;
   if (n < 2) return [];
 
@@ -193,7 +202,8 @@ export function generateBalancedSchedule(teams: Team[], config: TournamentConfig
       timeUsage[pair.awayId][chosenTime]++;
 
       generatedMatches.push({
-        id: `m_${roundNum}_${matchCounter++}`,
+        id: `m_${category}_${roundNum}_${matchCounter++}`,
+        category,
         round: roundNum,
         date: dateStr,
         time: chosenTime,
@@ -213,14 +223,81 @@ export function generateBalancedSchedule(teams: Team[], config: TournamentConfig
   return generatedMatches;
 }
 
+export function createFemaleSeedData(config: TournamentConfig): {
+  teams: Team[];
+  players: Player[];
+  matches: Match[];
+} {
+  const femaleTeams: Team[] = [
+    { id: 'tf1', category: 'FEMENINO', name: 'Femenino 1', delegate: 'María Fernanda Briceño', color: '#db2777' },
+    { id: 'tf2', category: 'FEMENINO', name: 'Femenino 2', delegate: 'Carmen Elena Rojas', color: '#0d9488' },
+    { id: 'tf3', category: 'FEMENINO', name: 'Femenino 3', delegate: 'Yolanda Mendoza', color: '#7c3aed' },
+    { id: 'tf4', category: 'FEMENINO', name: 'Femenino 4', delegate: 'Ana Victoria Silva', color: '#ea580c' },
+    { id: 'tf5', category: 'FEMENINO', name: 'Femenino 5', delegate: 'Rosaura Castillo', color: '#2563eb' },
+    { id: 'tf6', category: 'FEMENINO', name: 'Femenino 6', delegate: 'Lucía Pérez', color: '#16a34a' },
+  ];
+
+  const femaleSampleNames: Array<[string, PlayerRole, string]> = [
+    ['Valeria González', 'Arrimador', '04'],
+    ['Gabriela Bolívar', 'Bochador', '09'],
+    ['Daniela Morales', 'Mixto', '12'],
+    ['Camila Herrera', 'Bochador', '18'],
+    ['Sofía Rodríguez', 'Arrimador', '02'],
+    ['Mariana Tovar', 'Bochador', '11'],
+    ['Andreína Díaz', 'Mixto', '07'],
+    ['Patricia León', 'Arrimador', '15'],
+    ['Carla Velásquez', 'Arrimador', '03'],
+    ['Beatriz Flores', 'Bochador', '10'],
+    ['Norelys Suárez', 'Mixto', '16'],
+    ['Mónica Aponte', 'Bochador', '21'],
+    ['Yelitza Castro', 'Arrimador', '01'],
+    ['Génesis Blanco', 'Bochador', '08'],
+    ['Paola Vargas', 'Mixto', '14'],
+    ['Verónica Ortiz', 'Arrimador', '20'],
+    ['Luisa Miranda', 'Arrimador', '05'],
+    ['Adriana Salas', 'Bochador', '13'],
+    ['Stefany Quintero', 'Mixto', '17'],
+    ['Roxana Linares', 'Bochador', '22'],
+    ['Evelyn Paredes', 'Arrimador', '06'],
+    ['Marisol Rangel', 'Bochador', '19'],
+    ['Katiuska Peña', 'Mixto', '23'],
+    ['Jennifer Medina', 'Arrimador', '24'],
+  ];
+
+  const femalePlayers: Player[] = [];
+  let pIdx = 0;
+  femaleTeams.forEach((team) => {
+    for (let i = 0; i < 4; i++) {
+      const [pName, role, num] = femaleSampleNames[pIdx++];
+      femalePlayers.push({
+        id: `p_${team.id}_${i + 1}`,
+        category: 'FEMENINO',
+        teamId: team.id,
+        name: pName,
+        cedula: `V-${16200000 + pIdx * 149}`,
+        number: num,
+        role,
+      });
+    }
+  });
+
+  const femaleMatches = generateBalancedSchedule(femaleTeams, config, 'FEMENINO');
+
+  return {
+    teams: femaleTeams,
+    players: femalePlayers,
+    matches: femaleMatches,
+  };
+}
+
 export function initializeSeedData(): TournamentState {
-  const initialTeams: Team[] = [
-    { id: 't1', name: 'Equipo 1', delegate: 'Carlos Mendoza', color: '#16a34a' },
-    { id: 't2', name: 'Equipo 2', delegate: 'José Gregorio Pérez', color: '#2563eb' },
-    { id: 't3', name: 'Equipo 3', delegate: 'Luis Alberto Rojas', color: '#d97706' },
-    { id: 't4', name: 'Equipo 4', delegate: 'Rafael Castillo', color: '#dc2626' },
-    { id: 't5', name: 'Equipo 5', delegate: 'Miguel Ángel Silva', color: '#7c3aed' },
-    { id: 't6', name: 'Equipo 6', delegate: 'Pedro Ramírez', color: '#0d9488' },
+  const initialMaleTeams: Team[] = [
+    { id: 't1', category: 'MASCULINO', name: 'Equipo 1', delegate: 'Carlos Mendoza', color: '#16a34a' },
+    { id: 't2', category: 'MASCULINO', name: 'Equipo 2', delegate: 'José Gregorio Pérez', color: '#2563eb' },
+    { id: 't3', category: 'MASCULINO', name: 'Equipo 3', delegate: 'Luis Alberto Rojas', color: '#d97706' },
+    { id: 't4', category: 'MASCULINO', name: 'Equipo 4', delegate: 'Rafael Castillo', color: '#dc2626' },
+    { id: 't5', category: 'MASCULINO', name: 'Equipo 5', delegate: 'Miguel Ángel Silva', color: '#7c3aed' },
+    { id: 't6', category: 'MASCULINO', name: 'Equipo 6', delegate: 'Pedro Ramírez', color: '#0d9488' },
   ];
 
   const sampleNames: Array<[string, PlayerRole, string]> = [
@@ -250,13 +327,14 @@ export function initializeSeedData(): TournamentState {
     ['Raúl Paredes', 'Arrimador', '24'],
   ];
 
-  const players: Player[] = [];
+  const malePlayers: Player[] = [];
   let pIdx = 0;
-  initialTeams.forEach((team) => {
+  initialMaleTeams.forEach((team) => {
     for (let i = 0; i < 4; i++) {
       const [pName, role, num] = sampleNames[pIdx++];
-      players.push({
+      malePlayers.push({
         id: `p_${team.id}_${i + 1}`,
+        category: 'MASCULINO',
         teamId: team.id,
         name: pName,
         cedula: `V-${14500000 + pIdx * 137}`,
@@ -267,13 +345,14 @@ export function initializeSeedData(): TournamentState {
   });
 
   const config: TournamentConfig = { ...DEFAULT_CONFIG };
-  const matches = generateBalancedSchedule(initialTeams, config);
+  const maleMatches = generateBalancedSchedule(initialMaleTeams, config, 'MASCULINO');
+  const femaleSeed = createFemaleSeedData(config);
 
   const state: TournamentState = {
     config,
-    teams: initialTeams,
-    players,
-    matches,
+    teams: [...initialMaleTeams, ...femaleSeed.teams],
+    players: [...malePlayers, ...femaleSeed.players],
+    matches: [...maleMatches, ...femaleSeed.matches],
     playerLogs: [],
   };
 
@@ -281,26 +360,69 @@ export function initializeSeedData(): TournamentState {
   return state;
 }
 
+export function normalizeTournamentState(
+  parsed: Partial<TournamentState>,
+  forceIsAdmin?: boolean
+): TournamentState {
+  const mergedConfig: TournamentConfig = {
+    ...DEFAULT_CONFIG,
+    ...(parsed.config || {}),
+    adminPin: parsed.config?.adminPin ? parsed.config.adminPin : '2026',
+    isAdmin: forceIsAdmin !== undefined ? forceIsAdmin : false,
+  };
+
+  const teams: Team[] = (parsed.teams || []).map((t) => ({
+    ...t,
+    category: t.category === 'FEMENINO' ? 'FEMENINO' : 'MASCULINO',
+  }));
+  const teamCategoryMap = new Map(teams.map((t) => [t.id, t.category]));
+
+  const players: Player[] = (parsed.players || []).map((p) => ({
+    ...p,
+    category: p.category || teamCategoryMap.get(p.teamId) || 'MASCULINO',
+  }));
+
+  const matches: Match[] = (parsed.matches || []).map((m) => ({
+    ...m,
+    category:
+      m.category ||
+      teamCategoryMap.get(m.homeId) ||
+      teamCategoryMap.get(m.awayId) ||
+      'MASCULINO',
+  }));
+
+  const playerLogs = (parsed.playerLogs || []).map((l) => ({
+    ...l,
+    category: l.category || teamCategoryMap.get(l.teamId) || 'MASCULINO',
+  }));
+
+  const hasFemaleTeams = teams.some((t) => t.category === 'FEMENINO');
+  if (!hasFemaleTeams) {
+    const femaleSeed = createFemaleSeedData(mergedConfig);
+    return {
+      config: mergedConfig,
+      teams: [...teams, ...femaleSeed.teams],
+      players: [...players, ...femaleSeed.players],
+      matches: [...matches, ...femaleSeed.matches],
+      playerLogs,
+    };
+  }
+
+  return {
+    config: mergedConfig,
+    teams,
+    players,
+    matches,
+    playerLogs,
+  };
+}
+
 export function loadTournamentState(): TournamentState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<TournamentState>;
-      const mergedConfig: TournamentConfig = {
-        ...DEFAULT_CONFIG,
-        ...(parsed.config || {}),
-        adminPin: parsed.config?.adminPin ? parsed.config.adminPin : '2026',
-        isAdmin: false,
-      };
-      return {
-        ...DEFAULT_STATE,
-        ...parsed,
-        config: mergedConfig,
-        teams: parsed.teams || [],
-        players: parsed.players || [],
-        matches: parsed.matches || [],
-        playerLogs: parsed.playerLogs || [],
-      };
+      return normalizeTournamentState(parsed, false);
     }
   } catch (err) {
     console.error('Error leyendo localStorage:', err);
@@ -540,9 +662,14 @@ export function downloadCSV(filename: string, rows: Array<Array<string | number>
   URL.revokeObjectURL(url);
 }
 
-export function exportCalendarCSV(state: TournamentState): string {
+export function exportCalendarCSV(
+  state: TournamentState,
+  category: TournamentCategory = 'MASCULINO'
+): string {
+  const catLabel = getCategoryLabel(category);
   const rows: Array<Array<string | number>> = [
     [
+      'Categoria',
       'Jornada',
       'Fecha',
       'Hora',
@@ -558,6 +685,7 @@ export function exportCalendarCSV(state: TournamentState): string {
     const h = state.teams.find((t) => t.id === m.homeId)?.name || '';
     const a = state.teams.find((t) => t.id === m.awayId)?.name || '';
     rows.push([
+      catLabel,
       m.round,
       m.date,
       m.time,
@@ -569,18 +697,38 @@ export function exportCalendarCSV(state: TournamentState): string {
       m.status === 'COMPLETED' ? 'Finalizado' : 'Programado',
     ]);
   });
-  const filename = 'Calendario_APC_Turmero.csv';
+  const tag = category === 'FEMENINO' ? 'Femenino' : 'Masculino';
+  const filename = `Calendario_${tag}_APC_Turmero.csv`;
   downloadCSV(filename, rows);
   return filename;
 }
 
-export function exportStandingsCSV(state: TournamentState): string {
+export function exportStandingsCSV(
+  state: TournamentState,
+  category: TournamentCategory = 'MASCULINO'
+): string {
   const st = calculateStandings(state.teams, state.matches);
+  const catLabel = getCategoryLabel(category);
   const rows: Array<Array<string | number>> = [
-    ['Pos', 'Equipo', 'Delegado', 'JJ', 'JG', 'JP', 'TF', 'TC', 'DIF', 'AVE', 'PTS', 'Criterio Desempate'],
+    [
+      'Categoria',
+      'Pos',
+      'Equipo',
+      'Delegado',
+      'JJ',
+      'JG',
+      'JP',
+      'TF',
+      'TC',
+      'DIF',
+      'AVE',
+      'PTS',
+      'Criterio Desempate',
+    ],
   ];
   st.forEach((r, idx) => {
     rows.push([
+      catLabel,
       idx + 1,
       r.name,
       r.delegate,
@@ -595,15 +743,21 @@ export function exportStandingsCSV(state: TournamentState): string {
       r.tieBreakerNote,
     ]);
   });
-  const filename = 'Clasificacion_APC_Turmero.csv';
+  const tag = category === 'FEMENINO' ? 'Femenino' : 'Masculino';
+  const filename = `Clasificacion_${tag}_APC_Turmero.csv`;
   downloadCSV(filename, rows);
   return filename;
 }
 
-export function exportStatsCSV(state: TournamentState): string {
+export function exportStatsCSV(
+  state: TournamentState,
+  category: TournamentCategory = 'MASCULINO'
+): string {
   const st = calculatePlayerStats(state);
+  const catLabel = getCategoryLabel(category);
   const rows: Array<Array<string | number>> = [
     [
+      'Categoria',
       'Jugador',
       'Numero',
       'Rol',
@@ -625,6 +779,7 @@ export function exportStatsCSV(state: TournamentState): string {
   ];
   st.forEach((s) => {
     rows.push([
+      catLabel,
       s.name,
       s.number,
       s.role,
@@ -644,7 +799,8 @@ export function exportStatsCSV(state: TournamentState): string {
       s.totalAvg.toFixed(3),
     ]);
   });
-  const filename = 'Estadisticas_Individuales_APC_Turmero.csv';
+  const tag = category === 'FEMENINO' ? 'Femenino' : 'Masculino';
+  const filename = `Estadisticas_${tag}_APC_Turmero.csv`;
   downloadCSV(filename, rows);
   return filename;
 }

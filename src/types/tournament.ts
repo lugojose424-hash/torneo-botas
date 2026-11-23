@@ -1,5 +1,7 @@
 export type PlayerRole = 'Arrimador' | 'Bochador' | 'Mixto';
 
+export type TournamentCategory = 'MASCULINO' | 'FEMENINO';
+
 export type TimeSlot = string;
 
 export type MatchStatus = 'PENDING' | 'COMPLETED';
@@ -18,6 +20,7 @@ export interface TournamentConfig {
 
 export interface Team {
   id: string;
+  category: TournamentCategory;
   name: string;
   delegate: string;
   color: string;
@@ -25,6 +28,7 @@ export interface Team {
 
 export interface Player {
   id: string;
+  category: TournamentCategory;
   teamId: string;
   name: string;
   cedula: string;
@@ -34,6 +38,7 @@ export interface Player {
 
 export interface Match {
   id: string;
+  category: TournamentCategory;
   round: number;
   date: string;
   time: TimeSlot;
@@ -47,6 +52,7 @@ export interface Match {
 
 export interface PlayerStatLog {
   id: string;
+  category: TournamentCategory;
   matchId?: string;
   round: number;
   playerId: string;

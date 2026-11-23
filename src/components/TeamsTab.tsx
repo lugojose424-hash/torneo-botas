@@ -1,7 +1,8 @@
 import { PlusCircle, Pencil, UserPlus, Trash2, Edit2, XCircle } from 'lucide-react';
-import { Player, Team } from '../types/tournament';
+import { Player, Team, TournamentCategory } from '../types/tournament';
 
 interface TeamsTabProps {
+  category?: TournamentCategory;
   teams: Team[];
   players: Player[];
   isAdmin: boolean;
@@ -14,6 +15,7 @@ interface TeamsTabProps {
 }
 
 export function TeamsTab({
+  category = 'MASCULINO',
   teams,
   players,
   isAdmin,
@@ -24,15 +26,20 @@ export function TeamsTab({
   onEditPlayer,
   onDeletePlayer,
 }: TeamsTabProps) {
+  const isFemenino = category === 'FEMENINO';
+  const categoryTitle = isFemenino ? 'Categoría Femenina' : 'Categoría Masculina';
+
   return (
     <div className="space-y-5">
       <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold text-[#0B213A]">
-            Equipos Participantes y Planillas
+            Equipos y Planillas · {categoryTitle}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Administra los equipos inscritos y la nómina oficial de arrimadores y bochadores.
+            {isFemenino
+              ? 'Administra los equipos femeninos inscritos y la nómina oficial de arrimadoras y bochadoras.'
+              : 'Administra los equipos inscritos y la nómina oficial de arrimadores y bochadores.'}
           </p>
         </div>
         {isAdmin && (
@@ -65,11 +72,12 @@ export function TeamsTab({
                     {team.name}
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5 truncate">
-                    Delegado:{' '}
+                    {isFemenino ? 'Delegada' : 'Delegado'}:{' '}
                     <strong className="text-slate-700">
                       {team.delegate || 'No registrado'}
                     </strong>{' '}
-                    · <span className="font-mono tabular-nums">{roster.length}</span> jugadores
+                    · <span className="font-mono tabular-nums">{roster.length}</span>{' '}
+                    {isFemenino ? 'jugadoras' : 'jugadores'}
                   </p>
                 </div>
 
@@ -90,7 +98,7 @@ export function TeamsTab({
                       className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-[#1565A0] hover:bg-[#115282] text-white transition-colors whitespace-nowrap shrink-0"
                     >
                       <UserPlus className="w-3.5 h-3.5" />
-                      <span>Jugador</span>
+                      <span>{isFemenino ? 'Jugadora' : 'Jugador'}</span>
                     </button>
                     {teams.length > 2 && (
                       <button
@@ -111,7 +119,9 @@ export function TeamsTab({
                 {roster.length === 0 ? (
                   <div className="py-8 text-center space-y-2">
                     <p className="text-xs text-slate-400">
-                      No hay jugadores registrados en esta planilla.
+                      {isFemenino
+                        ? 'No hay jugadoras registradas en esta planilla.'
+                        : 'No hay jugadores registrados en esta planilla.'}
                     </p>
                     {isAdmin && (
                       <button
@@ -119,7 +129,7 @@ export function TeamsTab({
                         onClick={() => onAddPlayer(team.id)}
                         className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
                       >
-                        Registrar Primer Jugador
+                        {isFemenino ? 'Registrar Primera Jugadora' : 'Registrar Primer Jugador'}
                       </button>
                     )}
                   </div>
@@ -129,7 +139,7 @@ export function TeamsTab({
                       <thead>
                         <tr className="text-slate-500 border-b border-slate-200">
                           <th className="pb-2 font-semibold">N°</th>
-                          <th className="pb-2 font-semibold">Jugador</th>
+                          <th className="pb-2 font-semibold">{isFemenino ? 'Jugadora' : 'Jugador'}</th>
                           <th className="pb-2 font-semibold">Cédula</th>
                           <th className="pb-2 font-semibold">Especialidad</th>
                           {isAdmin && (

@@ -12,11 +12,11 @@ import {
   TimeSlot,
   ToastMessage,
   ToastType,
+  TournamentCategory,
   TournamentConfig,
   TournamentState,
 } from './types/tournament';
 import {
-  DEFAULT_STATE,
   calculateStandings,
   downloadJSONBackup,
   exportCalendarCSV,
@@ -24,8 +24,10 @@ import {
   exportStatsCSV,
   format24hTo12h,
   generateBalancedSchedule,
+  getCategoryLabel,
   initializeSeedData,
   loadTournamentState,
+  normalizeTournamentState,
   saveTournamentState,
 } from './utils/tournamentLogic';
 import { SummaryCards } from './components/SummaryCards';
@@ -87,12 +89,14 @@ const ADMIN_TABS: Array<{ id: TabId; label: string }> = [
 
 export default function App() {
   const [state, setState] = useState<TournamentState>(() => loadTournamentState());
+  const [activeCategory, setActiveCategory] = useState<TournamentCategory>('MASCULINO');
   const [activeTab, setActiveTab] = useState<TabId>('calendar');
   const [modal, setModal] = useState<ActiveModal>({ type: 'none' });
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const isAdmin = state.config.isAdmin;
   const visibleTabs = isAdmin ? ADMIN_TABS : SPECTATOR_TABS;
+  const activeCategoryLabel = getCategoryLabel(activeCategory);
 
   const addToast = useCallback((message: string, type: ToastType = 'info') => {
     const id = `toast_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
@@ -119,9 +123,43 @@ export default function App() {
     }
   }, [isAdmin, activeTab]);
 
+  const maleTeams = useMemo(
+    () => state.teams.filter((t) => t.category === 'MASCULINO'),
+    [state.teams]
+  );
+  const femaleTeams = useMemo(
+    () => state.teams.filter((t) => t.category === 'FEMENINO'),
+    [state.teams]
+  );
+
+  const categoryTeams = activeCategory === 'FEMENINO' ? femaleTeams : maleTeams;
+  const categoryPlayers = useMemo(
+    () => state.players.filter((p) => p.category === activeCategory),
+    [state.players, activeCategory]
+  );
+  const categoryMatches = useMemo(
+    () => state.matches.filter((m) => m.category === activeCategory),
+    [state.matches, activeCategory]
+  );
+  const categoryLogs = useMemo(
+    () => state.playerLogs.filter((l) => l.category === activeCategory),
+    [state.playerLogs, activeCategory]
+  );
+
+  const categoryState = useMemo<TournamentState>(
+    () => ({
+      config: state.config,
+      teams: categoryTeams,
+      players: categoryPlayers,
+      matches: categoryMatches,
+      playerLogs: categoryLogs,
+    }),
+    [state.config, categoryTeams, categoryPlayers, categoryMatches, categoryLogs]
+  );
+
   const standings = useMemo(
-    () => calculateStandings(state.teams, state.matches),
-    [state.teams, state.matches]
+    () => calculateStandings(categoryTeams, categoryMatches),
+    [categoryTeams, categoryMatches]
   );
 
   const leader = useMemo(() => {
@@ -129,13 +167,13 @@ export default function App() {
   }, [standings]);
 
   const completedCount = useMemo(
-    () => state.matches.filter((m) => m.status === 'COMPLETED').length,
-    [state.matches]
+    () => categoryMatches.filter((m) => m.status === 'COMPLETED').length,
+    [categoryMatches]
   );
 
   const roundsList = useMemo(
-    () => [...new Set(state.matches.map((m) => m.round))].sort((a, b) => a - b),
-    [state.matches]
+    () => [...new Set(categoryMatches.map((m) => m.round))].sort((a, b) => a - b),
+    [categoryMatches]
   );
 
   const closeModal = () => setModal({ type: 'none' });
@@ -216,13 +254,13 @@ export default function App() {
     setState((prev) => ({
       ...prev,
       matches: prev.matches.map((m) =>
-        m.round === round
+        m.category === activeCategory && m.round === round
           ? { ...m, date, time: formattedTime ?? m.time }
           : m
       ),
     }));
     closeModal();
-    addToast(`Jornada ${round} actualizada manualmente.`, 'success');
+    addToast(`Jornada ${round} (${activeCategoryLabel}) actualizada manualmente.`, 'success');
   };
 
   const handleChangeAdminPin = (newPin: string) => {
@@ -237,12 +275,17 @@ export default function App() {
 
   const handleRegenerateSchedule = () => {
     if (!isAdmin) return;
-    setState((prev) => ({
-      ...prev,
-      matches: generateBalancedSchedule(prev.teams, prev.config),
-    }));
+    setState((prev) => {
+      const targetTeams = prev.teams.filter((t) => t.category === activeCategory);
+      const otherMatches = prev.matches.filter((m) => m.category !== activeCategory);
+      const regenerated = generateBalancedSchedule(targetTeams, prev.config, activeCategory);
+      return {
+        ...prev,
+        matches: [...otherMatches, ...regenerated],
+      };
+    });
     closeModal();
-    addToast('Nuevo calendario equilibrado generado con éxito.', 'success');
+    addToast(`Nuevo calendario equilibrado generado para ${activeCategoryLabel}.`, 'success');
   };
 
   /* Acciones de Equipos (solo Admin) */
@@ -254,24 +297,30 @@ export default function App() {
   ) => {
     if (!isAdmin) return;
     const newTeam = {
-      id: `t_${Date.now()}`,
+      id: `t_${activeCategory}_${Date.now()}`,
+      category: activeCategory,
       name,
       delegate,
       color,
     };
     setState((prev) => {
       const nextTeams = [...prev.teams, newTeam];
-      const nextMatches = regenerate
-        ? generateBalancedSchedule(nextTeams, prev.config)
-        : prev.matches;
+      if (!regenerate) {
+        return { ...prev, teams: nextTeams };
+      }
+      const targetTeams = nextTeams.filter((t) => t.category === activeCategory);
+      const otherMatches = prev.matches.filter((m) => m.category !== activeCategory);
       return {
         ...prev,
         teams: nextTeams,
-        matches: nextMatches,
+        matches: [
+          ...otherMatches,
+          ...generateBalancedSchedule(targetTeams, prev.config, activeCategory),
+        ],
       };
     });
     closeModal();
-    addToast(`"${name}" agregado al torneo.`, 'success');
+    addToast(`"${name}" agregado a ${activeCategoryLabel}.`, 'success');
   };
 
   const handleEditTeam = (
@@ -294,13 +343,20 @@ export default function App() {
   const handleDeleteTeam = (teamId: string) => {
     if (!isAdmin) return;
     setState((prev) => {
+      const targetTeam = prev.teams.find((t) => t.id === teamId);
+      const targetCat = targetTeam?.category || activeCategory;
       const nextTeams = prev.teams.filter((t) => t.id !== teamId);
+      const catTeams = nextTeams.filter((t) => t.category === targetCat);
+      const otherMatches = prev.matches.filter((m) => m.category !== targetCat);
       return {
         ...prev,
         teams: nextTeams,
         players: prev.players.filter((p) => p.teamId !== teamId),
         playerLogs: prev.playerLogs.filter((l) => l.teamId !== teamId),
-        matches: generateBalancedSchedule(nextTeams, prev.config),
+        matches: [
+          ...otherMatches,
+          ...generateBalancedSchedule(catTeams, prev.config, targetCat),
+        ],
       };
     });
     closeModal();
@@ -316,12 +372,14 @@ export default function App() {
     role: PlayerRole
   ) => {
     if (!isAdmin) return;
+    const teamCat = state.teams.find((t) => t.id === teamId)?.category || activeCategory;
     setState((prev) => ({
       ...prev,
       players: [
         ...prev.players,
         {
           id: `p_${Date.now()}`,
+          category: teamCat,
           teamId,
           name,
           number,
@@ -331,7 +389,7 @@ export default function App() {
       ],
     }));
     closeModal();
-    addToast('Jugador incorporado a la planilla.', 'success');
+    addToast('Incorporación registrada en la planilla.', 'success');
   };
 
   const handleEditPlayer = (
@@ -349,7 +407,7 @@ export default function App() {
       ),
     }));
     closeModal();
-    addToast('Ficha del jugador actualizada.', 'success');
+    addToast('Ficha actualizada.', 'success');
   };
 
   const handleDeletePlayer = (playerId: string) => {
@@ -359,7 +417,7 @@ export default function App() {
       players: prev.players.filter((p) => p.id !== playerId),
       playerLogs: prev.playerLogs.filter((l) => l.playerId !== playerId),
     }));
-    addToast('Jugador retirado de la planilla.', 'info');
+    addToast('Retiro de planilla completado.', 'info');
   };
 
   /* Acciones de Estadísticas Individuales (solo Admin) */
@@ -378,12 +436,14 @@ export default function App() {
   ) => {
     if (!isAdmin) return;
     const player = state.players.find((p) => p.id === playerId);
+    const cat = player?.category || activeCategory;
     setState((prev) => ({
       ...prev,
       playerLogs: [
         ...prev.playerLogs,
         {
           id: `log_${Date.now()}`,
+          category: cat,
           round,
           playerId,
           teamId,
@@ -392,7 +452,7 @@ export default function App() {
       ],
     }));
     closeModal();
-    addToast(`Actuación sumada a ${player?.name || 'jugador'}.`, 'success');
+    addToast(`Actuación sumada a ${player?.name || 'participante'}.`, 'success');
   };
 
   const handleSaveBatchStats = (
@@ -410,8 +470,10 @@ export default function App() {
   ) => {
     if (!isAdmin) return;
     const timestamp = Date.now();
+    const cat = state.teams.find((t) => t.id === teamId)?.category || activeCategory;
     const newLogs = entries.map((entry, idx) => ({
       id: `log_${timestamp}_${idx}`,
+      category: cat,
       round,
       teamId,
       ...entry,
@@ -421,19 +483,30 @@ export default function App() {
       playerLogs: [...prev.playerLogs, ...newLogs],
     }));
     closeModal();
-    addToast(`Se registraron actuaciones para ${entries.length} jugador(es).`, 'success');
+    addToast(`Se registraron actuaciones para ${entries.length} participante(s).`, 'success');
   };
 
   /* Configuración y Respaldo (solo Admin) */
   const handleSaveSettings = (nextConfig: TournamentConfig, regenerateNow: boolean) => {
     if (!isAdmin) return;
-    setState((prev) => ({
-      ...prev,
-      config: { ...nextConfig, isAdmin: true },
-      matches: regenerateNow
-        ? generateBalancedSchedule(prev.teams, nextConfig)
-        : prev.matches,
-    }));
+    setState((prev) => {
+      if (!regenerateNow) {
+        return {
+          ...prev,
+          config: { ...nextConfig, isAdmin: true },
+        };
+      }
+      const mTeams = prev.teams.filter((t) => t.category === 'MASCULINO');
+      const fTeams = prev.teams.filter((t) => t.category === 'FEMENINO');
+      return {
+        ...prev,
+        config: { ...nextConfig, isAdmin: true },
+        matches: [
+          ...generateBalancedSchedule(mTeams, nextConfig, 'MASCULINO'),
+          ...generateBalancedSchedule(fTeams, nextConfig, 'FEMENINO'),
+        ],
+      };
+    });
     closeModal();
     addToast('Configuración del torneo guardada.', 'success');
   };
@@ -447,22 +520,14 @@ export default function App() {
     });
     closeModal();
     addToast(
-      'Torneo restaurado con los 6 equipos iniciales y calendario equilibrado.',
+      'Torneo restaurado con los equipos iniciales Masculino y Femenino.',
       'info'
     );
   };
 
   const handleRestoreBackup = (imported: TournamentState) => {
     if (!isAdmin) return;
-    setState({
-      ...DEFAULT_STATE,
-      ...imported,
-      config: {
-        ...DEFAULT_STATE.config,
-        ...(imported.config || {}),
-        isAdmin: true,
-      },
-    });
+    setState(normalizeTournamentState(imported, true));
     closeModal();
     addToast('Datos del torneo restaurados correctamente.', 'success');
   };
@@ -495,13 +560,13 @@ export default function App() {
       return (
         <Modal
           open
-          title="Distribución Equitativa por Cancha y Horario"
+          title={`Distribución por Cancha · ${activeCategoryLabel}`}
           maxWidthClass="max-w-2xl"
           onClose={closeModal}
         >
           <CourtBalanceModalContent
-            teams={state.teams}
-            matches={state.matches}
+            teams={categoryTeams}
+            matches={categoryMatches}
             onClose={closeModal}
           />
         </Modal>
@@ -554,7 +619,7 @@ export default function App() {
     }
 
     if (modal.type === 'editRound') {
-      const roundMatches = state.matches.filter((x) => x.round === modal.round);
+      const roundMatches = categoryMatches.filter((x) => x.round === modal.round);
       if (roundMatches.length === 0) return null;
       return (
         <Modal
@@ -589,16 +654,21 @@ export default function App() {
 
     if (modal.type === 'regenerate') {
       return (
-        <Modal open title="Regenerar Calendario Equilibrado" onClose={closeModal}>
+        <Modal
+          open
+          title={`Regenerar Calendario · ${activeCategoryLabel}`}
+          onClose={closeModal}
+        >
           <div className="space-y-4">
             <p className="text-sm text-slate-700">
               Se generará un nuevo calendario Round Robin para los{' '}
-              <strong>{state.teams.length} equipos</strong> distribuidos equitativamente entre las{' '}
+              <strong>{categoryTeams.length} equipos</strong> de{' '}
+              <strong>{activeCategoryLabel}</strong> distribuidos equitativamente entre las{' '}
               <strong>4 canchas</strong> en turnos de <strong>07:00 PM y 09:00 PM</strong>.
             </p>
             <p className="text-xs text-amber-800 bg-amber-50 p-3 rounded-lg border border-amber-200 font-medium">
-              Nota: Esto reiniciará los marcadores actuales de los partidos. Las planillas de
-              jugadores se mantienen intactas.
+              Nota: Esto reiniciará los marcadores actuales de {activeCategoryLabel}. La otra
+              categoría y las planillas se mantienen intactas.
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -623,10 +693,11 @@ export default function App() {
 
     if (modal.type === 'addTeam') {
       return (
-        <Modal open title="Agregar Nuevo Equipo al Torneo" onClose={closeModal}>
+        <Modal open title={`Agregar Equipo · ${activeCategoryLabel}`} onClose={closeModal}>
           <TeamFormModalContent
             mode="add"
-            nextNumber={state.teams.length + 1}
+            category={activeCategory}
+            nextNumber={categoryTeams.length + 1}
             onSaveAdd={handleAddTeam}
             onSaveEdit={handleEditTeam}
             onCancel={closeModal}
@@ -642,8 +713,9 @@ export default function App() {
         <Modal open title="Editar Datos del Equipo" onClose={closeModal}>
           <TeamFormModalContent
             mode="edit"
+            category={team.category}
             initialTeam={team}
-            nextNumber={state.teams.length + 1}
+            nextNumber={categoryTeams.length + 1}
             onSaveAdd={handleAddTeam}
             onSaveEdit={handleEditTeam}
             onCancel={closeModal}
@@ -655,12 +727,14 @@ export default function App() {
     if (modal.type === 'deleteTeam') {
       const team = state.teams.find((t) => t.id === modal.teamId);
       if (!team) return null;
+      const sameCatCount = state.teams.filter((t) => t.category === team.category).length;
       return (
         <Modal open title="Eliminar Equipo" onClose={closeModal}>
           <div className="space-y-4">
             <p className="text-sm text-slate-700">
-              ¿Deseas eliminar a <strong>{team.name}</strong> y regenerar el calendario con los{' '}
-              {state.teams.length - 1} equipos restantes?
+              ¿Deseas eliminar a <strong>{team.name}</strong> y regenerar el calendario de{' '}
+              <strong>{getCategoryLabel(team.category)}</strong> con los {sameCatCount - 1} equipos
+              restantes?
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -685,14 +759,16 @@ export default function App() {
 
     if (modal.type === 'addPlayer') {
       const team = state.teams.find((t) => t.id === modal.teamId);
+      const cat = team?.category || activeCategory;
       return (
         <Modal
           open
-          title={`Agregar Jugador · ${team?.name || ''}`}
+          title={`${cat === 'FEMENINO' ? 'Agregar Jugadora' : 'Agregar Jugador'} · ${team?.name || ''}`}
           onClose={closeModal}
         >
           <PlayerFormModalContent
             mode="add"
+            category={cat}
             teamId={modal.teamId}
             onSaveAdd={handleAddPlayer}
             onSaveEdit={handleEditPlayer}
@@ -706,9 +782,14 @@ export default function App() {
       const player = state.players.find((p) => p.id === modal.playerId);
       if (!player) return null;
       return (
-        <Modal open title="Editar Jugador" onClose={closeModal}>
+        <Modal
+          open
+          title={player.category === 'FEMENINO' ? 'Editar Jugadora' : 'Editar Jugador'}
+          onClose={closeModal}
+        >
           <PlayerFormModalContent
             mode="edit"
+            category={player.category}
             initialPlayer={player}
             teamId={player.teamId}
             onSaveAdd={handleAddPlayer}
@@ -740,13 +821,13 @@ export default function App() {
       return (
         <Modal
           open
-          title="Carga Rápida de Estadísticas por Equipo"
+          title={`Carga Rápida de Estadísticas · ${activeCategoryLabel}`}
           maxWidthClass="max-w-3xl"
           onClose={closeModal}
         >
           <BatchStatsModalContent
-            teams={state.teams}
-            players={state.players}
+            teams={categoryTeams}
+            players={categoryPlayers}
             rounds={roundsList}
             onSaveBatch={handleSaveBatchStats}
             onCancel={closeModal}
@@ -773,16 +854,17 @@ export default function App() {
       return (
         <Modal open title="Exportar Reportes Excel y Respaldo JSON" onClose={closeModal}>
           <ExportImportModalContent
+            categoryLabel={activeCategoryLabel}
             onExportCalendar={() => {
-              const name = exportCalendarCSV(state);
+              const name = exportCalendarCSV(categoryState, activeCategory);
               addToast(`Archivo ${name} descargado.`, 'success');
             }}
             onExportStandings={() => {
-              const name = exportStandingsCSV(state);
+              const name = exportStandingsCSV(categoryState, activeCategory);
               addToast(`Archivo ${name} descargado.`, 'success');
             }}
             onExportStats={() => {
-              const name = exportStatsCSV(state);
+              const name = exportStatsCSV(categoryState, activeCategory);
               addToast(`Archivo ${name} descargado.`, 'success');
             }}
             onDownloadBackup={() => {
@@ -1080,20 +1162,67 @@ export default function App() {
           })}
         </nav>
 
+        {/* Selector de Categoría (Masculino / Femenino) */}
+        <section
+          aria-label="Selector de categoría del torneo"
+          className="bg-white rounded-xl border border-slate-200 p-2 sm:p-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5"
+        >
+          <div className="px-2 flex items-center justify-between sm:justify-start gap-2">
+            <span className="text-xs font-bold text-[#0B213A]">Rama Oficial del Torneo</span>
+            <span className="text-xs font-mono text-slate-500">
+              · {activeCategoryLabel}
+            </span>
+          </div>
+          <div
+            role="tablist"
+            aria-label="Categorías"
+            className="grid grid-cols-2 sm:inline-flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeCategory === 'MASCULINO'}
+              onClick={() => setActiveCategory('MASCULINO')}
+              className={`min-h-[44px] sm:min-h-[38px] px-4 py-2 rounded-md text-xs sm:text-sm font-bold transition-colors whitespace-nowrap ${
+                activeCategory === 'MASCULINO'
+                  ? 'bg-[#0B213A] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-[#0B213A]'
+              }`}
+            >
+              Masculina ({maleTeams.length})
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeCategory === 'FEMENINO'}
+              onClick={() => setActiveCategory('FEMENINO')}
+              className={`min-h-[44px] sm:min-h-[38px] px-4 py-2 rounded-md text-xs sm:text-sm font-bold transition-colors whitespace-nowrap ${
+                activeCategory === 'FEMENINO'
+                  ? 'bg-[#1565A0] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-[#0B213A]'
+              }`}
+            >
+              Femenina ({femaleTeams.length})
+            </button>
+          </div>
+        </section>
+
         {/* Tarjetas de Resumen */}
         <SummaryCards
-          totalTeams={state.teams.length}
-          totalPlayers={state.players.length}
+          categoryLabel={activeCategoryLabel}
+          totalTeams={categoryTeams.length}
+          totalPlayers={categoryPlayers.length}
           completedMatches={completedCount}
-          totalMatches={state.matches.length}
+          totalMatches={categoryMatches.length}
           leader={leader}
         />
 
         {/* Vista Activa */}
         {activeTab === 'calendar' && (
           <CalendarTab
-            matches={state.matches}
-            teams={state.teams}
+            key={`cal-${activeCategory}`}
+            matches={categoryMatches}
+            teams={categoryTeams}
             isAdmin={isAdmin}
             onOpenScoreModal={(matchId) => setModal({ type: 'score', matchId })}
             onOpenEditMatchModal={(matchId) => setModal({ type: 'editMatch', matchId })}
@@ -1105,11 +1234,12 @@ export default function App() {
 
         {activeTab === 'standings' && (
           <StandingsTab
-            teams={state.teams}
-            matches={state.matches}
+            key={`std-${activeCategory}`}
+            teams={categoryTeams}
+            matches={categoryMatches}
             isAdmin={isAdmin}
             onExportCSV={() => {
-              const name = exportStandingsCSV(state);
+              const name = exportStandingsCSV(categoryState, activeCategory);
               addToast(`Archivo ${name} descargado.`, 'success');
             }}
           />
@@ -1117,8 +1247,10 @@ export default function App() {
 
         {activeTab === 'teams' && isAdmin && (
           <TeamsTab
-            teams={state.teams}
-            players={state.players}
+            key={`tms-${activeCategory}`}
+            category={activeCategory}
+            teams={categoryTeams}
+            players={categoryPlayers}
             isAdmin={isAdmin}
             onAddTeam={() => setModal({ type: 'addTeam' })}
             onEditTeam={(teamId) => setModal({ type: 'editTeam', teamId })}
@@ -1131,13 +1263,14 @@ export default function App() {
 
         {activeTab === 'stats' && (
           <StatsTab
-            state={state}
-            teams={state.teams}
+            key={`sts-${activeCategory}`}
+            state={categoryState}
+            teams={categoryTeams}
             isAdmin={isAdmin}
             onOpenBatchStatsModal={() => setModal({ type: 'batchStats' })}
             onOpenSingleStatModal={(playerId) => setModal({ type: 'singleStat', playerId })}
             onExportCSV={() => {
-              const name = exportStatsCSV(state);
+              const name = exportStatsCSV(categoryState, activeCategory);
               addToast(`Archivo ${name} descargado.`, 'success');
             }}
           />

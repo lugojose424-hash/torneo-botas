@@ -2,6 +2,7 @@ import { Shield, CalendarCheck, Clock, Crown } from 'lucide-react';
 import { StandingRow } from '../types/tournament';
 
 interface SummaryCardsProps {
+  categoryLabel?: string;
   totalTeams: number;
   totalPlayers: number;
   completedMatches: number;
@@ -10,6 +11,7 @@ interface SummaryCardsProps {
 }
 
 export function SummaryCards({
+  categoryLabel,
   totalTeams,
   totalPlayers,
   completedMatches,
@@ -26,7 +28,9 @@ export function SummaryCards({
           <Shield className="w-5 h-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-medium text-slate-500 truncate">Equipos y Nómina</p>
+          <p className="text-xs font-medium text-slate-500 truncate">
+            {categoryLabel || 'Equipos y Nómina'}
+          </p>
           <p className="text-lg sm:text-xl font-bold text-[#0B213A] font-mono tabular-nums">
             {totalTeams}{' '}
             <span className="text-xs font-sans font-medium text-slate-500">

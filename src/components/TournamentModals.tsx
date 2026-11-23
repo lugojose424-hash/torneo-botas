@@ -17,6 +17,7 @@ import {
   Team,
   TimeSlot,
   ToastType,
+  TournamentCategory,
   TournamentConfig,
   TournamentState,
 } from '../types/tournament';
@@ -506,6 +507,7 @@ export function CourtBalanceModalContent({ teams, matches, onClose }: CourtBalan
 /* 4. Modal Agregar / Editar Equipo */
 interface TeamFormModalProps {
   mode: 'add' | 'edit';
+  category?: TournamentCategory;
   initialTeam?: Team;
   nextNumber: number;
   onSaveAdd: (name: string, delegate: string, color: string, regenerate: boolean) => void;
@@ -515,6 +517,7 @@ interface TeamFormModalProps {
 
 export function TeamFormModalContent({
   mode,
+  category = 'MASCULINO',
   initialTeam,
   nextNumber,
   onSaveAdd,
@@ -533,9 +536,12 @@ export function TeamFormModalContent({
     '#ea580c',
   ];
   const defaultColor = palette[(nextNumber - 1) % palette.length];
+  const isFemenino = (initialTeam?.category || category) === 'FEMENINO';
 
   const [name, setName] = useState(
-    mode === 'edit' && initialTeam ? initialTeam.name : `Equipo ${nextNumber}`
+    mode === 'edit' && initialTeam
+      ? initialTeam.name
+      : `${isFemenino ? 'Femenino' : 'Equipo'} ${nextNumber}`
   );
   const [delegate, setDelegate] = useState(
     mode === 'edit' && initialTeam ? initialTeam.delegate : ''
@@ -559,7 +565,7 @@ export function TeamFormModalContent({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="team-name-input" className="block text-xs font-semibold text-slate-700 mb-1">
-          Nombre del Equipo
+          Nombre del Equipo ({isFemenino ? 'Categoría Femenina' : 'Categoría Masculina'})
         </label>
         <input
           id="team-name-input"
@@ -577,12 +583,12 @@ export function TeamFormModalContent({
             htmlFor="team-delegate-input"
             className="block text-xs font-semibold text-slate-700 mb-1"
           >
-            Delegado / Capitán
+            {isFemenino ? 'Delegada / Capitana' : 'Delegado / Capitán'}
           </label>
           <input
             id="team-delegate-input"
             type="text"
-            placeholder="Nombre del delegado"
+            placeholder={isFemenino ? 'Nombre de la delegada' : 'Nombre del delegado'}
             value={delegate}
             onChange={(e) => setDelegate(e.target.value)}
             className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm"
@@ -636,6 +642,7 @@ export function TeamFormModalContent({
 /* 5. Modal Agregar / Editar Jugador */
 interface PlayerFormModalProps {
   mode: 'add' | 'edit';
+  category?: TournamentCategory;
   initialPlayer?: Player;
   teamId: string;
   onSaveAdd: (teamId: string, name: string, number: string, cedula: string, role: PlayerRole) => void;
@@ -651,12 +658,14 @@ interface PlayerFormModalProps {
 
 export function PlayerFormModalContent({
   mode,
+  category = 'MASCULINO',
   initialPlayer,
   teamId,
   onSaveAdd,
   onSaveEdit,
   onCancel,
 }: PlayerFormModalProps) {
+  const isFemenino = (initialPlayer?.category || category) === 'FEMENINO';
   const [name, setName] = useState(
     mode === 'edit' && initialPlayer ? initialPlayer.name : ''
   );
@@ -684,13 +693,13 @@ export function PlayerFormModalContent({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="pl-name" className="block text-xs font-semibold text-slate-700 mb-1">
-          Nombre Completo del Jugador
+          {isFemenino ? 'Nombre Completo de la Jugadora' : 'Nombre Completo del Jugador'}
         </label>
         <input
           id="pl-name"
           type="text"
           required
-          placeholder="Ej. Roberto Zambrano"
+          placeholder={isFemenino ? 'Ej. Valeria González' : 'Ej. Roberto Zambrano'}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm font-medium"
@@ -753,7 +762,11 @@ export function PlayerFormModalContent({
           type="submit"
           className="px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
         >
-          {mode === 'add' ? 'Registrar Jugador' : 'Actualizar'}
+          {mode === 'add'
+            ? isFemenino
+              ? 'Registrar Jugadora'
+              : 'Registrar Jugador'
+            : 'Actualizar'}
         </button>
       </div>
     </form>
@@ -1654,6 +1667,7 @@ export function ChangeAdminPinModalContent({
 
 /* 10. Modal Exportar Excel CSV / Respaldo JSON */
 interface ExportImportModalProps {
+  categoryLabel?: string;
   onExportCalendar: () => void;
   onExportStandings: () => void;
   onExportStats: () => void;
@@ -1663,6 +1677,7 @@ interface ExportImportModalProps {
 }
 
 export function ExportImportModalContent({
+  categoryLabel,
   onExportCalendar,
   onExportStandings,
   onExportStats,
@@ -1690,6 +1705,11 @@ export function ExportImportModalContent({
 
   return (
     <div className="space-y-4">
+      {categoryLabel && (
+        <p className="text-xs font-semibold text-[#1565A0] bg-[#E6F2FA] px-3 py-2 rounded-lg border border-[#1565A0]/20">
+          Reportes Excel activos para: <strong>{categoryLabel}</strong>
+        </p>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
         <button
           type="button"
@@ -1721,7 +1741,7 @@ export function ExportImportModalContent({
 
       <div className="border-t border-slate-200 pt-4 space-y-3">
         <p className="text-xs font-bold text-slate-800">
-          Respaldo Completo de Seguridad (.JSON)
+          Respaldo Completo de Seguridad (.JSON · Ambas Categorías)
         </p>
         <div className="flex flex-wrap gap-2">
           <button
