@@ -1,0 +1,2434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Torneo de Bolas Criollas | Complejo Deportivo APC Turmero</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            turf: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            },
+            clay: {
+              500: '#d97706',
+              600: '#b45309',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Estilos de apoyo para desplazamiento suave y barras de desplazamiento limpias */
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+
+  <!-- TOAST / MENSAJES FLOTANTES (Sin alert/confirm) -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- MODAL GENÉRICO REUTILIZABLE -->
+  <div id="app-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+    <div id="app-modal-box" class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden transform transition-all my-auto">
+      <div class="flex items-center justify-between px-6 py-4 bg-slate-900 text-white">
+        <h3 id="modal-title" class="font-bold text-lg tracking-tight">Título</h3>
+        <button onclick="closeModal()" class="p-1.5 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="modal-body" class="p-6 max-h-[80vh] overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <!-- ENCABEZADO PRINCIPAL -->
+  <header class="bg-gradient-to-r from-emerald-950 via-emerald-900 to-slate-900 text-white shadow-lg sticky top-0 z-30 no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <!-- Identidad del Torneo -->
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shrink-0 shadow-inner">
+            <!-- Icono SVG Bola Criolla & Mingo -->
+            <svg class="w-7 h-7 text-emerald-300" viewBox="0 0 36 36" fill="none">
+              <circle cx="15" cy="20" r="10" fill="currentColor" fill-opacity="0.25" stroke="currentColor" stroke-width="2.2"/>
+              <path d="M9 15C12 13 18 13 21 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <circle cx="28" cy="11" r="4" fill="#fbbf24" stroke="#fef3c7" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 id="header-tournament-name" class="text-lg sm:text-xl font-extrabold tracking-tight leading-tight">
+                Torneo Bolas Criollas • APC Turmero
+              </h1>
+              <span id="role-badge" class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500 text-emerald-950">
+                Modo Admin
+              </span>
+            </div>
+            <p class="text-xs text-emerald-200/80 font-medium">
+              Complejo Deportivo APC Turmero • 4 Canchas • Turnos 07:00 PM y 09:00 PM
+            </p>
+          </div>
+        </div>
+
+        <!-- Controles Globales: Modo Vista/Admin, Respaldo y Exportación -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="toggleAdminMode()" id="btn-toggle-role" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/15 transition">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-300"></i>
+            <span id="btn-toggle-role-text">Cambiar a Vista Pública</span>
+          </button>
+
+          <button onclick="openSettingsModal()" class="admin-only inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow transition">
+            <i data-lucide="sliders" class="w-4 h-4"></i>
+            <span>Configurar Torneo</span>
+          </button>
+
+          <button onclick="openExportImportModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow transition">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span>Excel / Respaldo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- NAVEGACIÓN POR PESTAÑAS -->
+      <nav class="mt-3.5 pt-2.5 border-t border-white/10 flex items-center gap-1.5 overflow-x-auto no-scrollbar" aria-label="Secciones del torneo">
+        <button onclick="switchTab('calendar')" id="tab-btn-calendar" class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition bg-white text-emerald-950 shadow">
+          <i data-lucide="calendar-days" class="w-4 h-4"></i>
+          <span>Calendario y Resultados</span>
+        </button>
+        <button onclick="switchTab('standings')" id="tab-btn-standings" class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition text-emerald-100 hover:bg-white/10">
+          <i data-lucide="trophy" class="w-4 h-4"></i>
+          <span>Tabla de Clasificación</span>
+        </button>
+        <button onclick="switchTab('teams')" id="tab-btn-teams" class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition text-emerald-100 hover:bg-white/10">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span>Equipos y Planillas</span>
+        </button>
+        <button onclick="switchTab('stats')" id="tab-btn-stats" class="tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition text-emerald-100 hover:bg-white/10">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+          <span>Estadísticas Individuales</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    
+    <!-- TARJETAS RESUMEN SUPERIORES -->
+    <section id="summary-cards" class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      <!-- Renderizado dinámicamente -->
+    </section>
+
+    <!-- =====================================================================
+         PESTAÑA 1: CALENDARIO Y RESULTADOS
+    ====================================================================== -->
+    <section id="view-calendar" class="tab-view space-y-5">
+      <!-- Barra de Herramientas del Calendario -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-400 mb-1">Filtrar Jornada</label>
+            <select id="filter-round" onchange="renderCalendar()" class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="ALL">Todas las Jornadas</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-400 mb-1">Filtrar Equipo</label>
+            <select id="filter-team" onchange="renderCalendar()" class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="ALL">Todos los Equipos</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-400 mb-1">Cancha</label>
+            <select id="filter-court" onchange="renderCalendar()" class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="ALL">Las 4 Canchas</option>
+              <option value="1">Cancha 1</option>
+              <option value="2">Cancha 2</option>
+              <option value="3">Cancha 3</option>
+              <option value="4">Cancha 4</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-400 mb-1">Estado</label>
+            <select id="filter-status" onchange="renderCalendar()" class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="ALL">Todos</option>
+              <option value="PENDING">Pendientes</option>
+              <option value="COMPLETED">Finalizados</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="openCourtBalanceModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition">
+            <i data-lucide="layout-grid" class="w-4 h-4 text-emerald-700"></i>
+            <span>Ver Balance de Canchas</span>
+          </button>
+          <button onclick="confirmRegenerateSchedule()" class="admin-only inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            <span>Regenerar Calendario Equilibrado</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenedor de Jornadas y Partidos -->
+      <div id="calendar-container" class="space-y-6"></div>
+    </section>
+
+    <!-- =====================================================================
+         PESTAÑA 2: TABLA DE CLASIFICACIÓN OFICIAL
+    ====================================================================== -->
+    <section id="view-standings" class="tab-view hidden space-y-5">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i>
+              <span>Tabla de Clasificación Oficial</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Criterios de desempate: <strong>1° Juegos Ganados (JG)</strong> • <strong>2° Juegos entre sí (Enfrentamiento Directo)</strong> • <strong>3° Average (TF / TC)</strong> • <strong>4° Diferencia de Tantos (DIF)</strong>.
+            </p>
+          </div>
+          <button onclick="exportStandingsCSV()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition self-start sm:self-auto">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+            <span>Exportar Tabla (CSV)</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-900 text-white text-[11px] uppercase tracking-wider">
+                <th class="py-3.5 px-4 font-bold text-center w-14">Pos</th>
+                <th class="py-3.5 px-4 font-bold">Equipo / Delegado</th>
+                <th class="py-3.5 px-3 font-bold text-center" title="Juegos Jugados">JJ</th>
+                <th class="py-3.5 px-3 font-bold text-center text-emerald-300" title="Juegos Ganados">JG</th>
+                <th class="py-3.5 px-3 font-bold text-center text-rose-300" title="Juegos Perdidos">JP</th>
+                <th class="py-3.5 px-3 font-bold text-center" title="Tantos a Favor">TF</th>
+                <th class="py-3.5 px-3 font-bold text-center" title="Tantos en Contra">TC</th>
+                <th class="py-3.5 px-3 font-bold text-center" title="Diferencia de Tantos">DIF</th>
+                <th class="py-3.5 px-3 font-bold text-center text-amber-300" title="Average (TF / TC)">AVE</th>
+                <th class="py-3.5 px-4 font-bold text-center bg-emerald-950" title="Puntos Oficiales">PTS</th>
+                <th class="py-3.5 px-4 font-bold text-center">Desempate</th>
+              </tr>
+            </thead>
+            <tbody id="standings-tbody" class="divide-y divide-slate-200 text-sm">
+              <!-- Filas generadas dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Matriz de Enfrentamientos Directos (Juegos entre sí) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <h3 class="text-base font-extrabold text-slate-900 mb-1 flex items-center gap-2">
+          <i data-lucide="git-compare" class="w-4 h-4 text-emerald-600"></i>
+          <span>Matriz de Enfrentamientos Directos ("Juegos entre sí")</span>
+        </h3>
+        <p class="text-xs text-slate-500 mb-4">Resultados cruzados entre cada pareja de equipos para verificación rápida de desempates.</p>
+        <div id="h2h-matrix-container" class="overflow-x-auto"></div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         PESTAÑA 3: EQUIPOS Y PLANILLA DE JUGADORES
+    ====================================================================== -->
+    <section id="view-teams" class="tab-view hidden space-y-5">
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-extrabold text-slate-900">Equipos Participantes y Planillas (Rosters)</h2>
+          <p class="text-xs text-slate-500">Agrega o edita equipos y administra la nómina oficial de arrimadores y bochadores.</p>
+        </div>
+        <button onclick="openAddTeamModal()" class="admin-only inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow transition">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          <span>Agregar Nuevo Equipo</span>
+        </button>
+      </div>
+
+      <div id="teams-grid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <!-- Tarjetas de equipos y sus jugadores -->
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         PESTAÑA 4: ESTADÍSTICAS INDIVIDUALES DE BOLAS CRIOLLAS
+    ====================================================================== -->
+    <section id="view-stats" class="tab-view hidden space-y-6">
+      <!-- Líderes Individuales Destacados -->
+      <div>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <div>
+            <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+              <i data-lucide="award" class="w-5 h-5 text-amber-500"></i>
+              <span>Cuadro de Líderes Individuales</span>
+            </h2>
+            <p class="text-xs text-slate-500">Líderes por Average (AVG) en Arrimes, Boche Rastrero, Boche Aéreo y Boche General.</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex items-center gap-1.5 bg-white border border-slate-300 rounded-xl px-3 py-1.5">
+              <label for="min-attempts-filter" class="text-xs font-bold text-slate-600">Mín. Intentos:</label>
+              <input id="min-attempts-filter" type="number" min="0" max="200" value="3" onchange="renderStats()" class="w-14 text-center font-bold text-sm text-emerald-800 bg-emerald-50 rounded-lg border border-emerald-200 py-0.5 focus:outline-none">
+            </div>
+            <button onclick="openBatchStatsModal()" class="admin-only inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow transition">
+              <i data-lucide="clipboard-edit" class="w-4 h-4"></i>
+              <span>Cargar Actuación por Jornada / Partido</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="leaders-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Tarjetas de líderes -->
+        </div>
+      </div>
+
+      <!-- Tabla General de Estadísticas Individuales -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <select id="stats-filter-team" onchange="renderStats()" class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800">
+              <option value="ALL">Todos los Equipos</option>
+            </select>
+            <select id="stats-sort-by" onchange="renderStats()" class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800">
+              <option value="totalAvg">Ordenar: AVG General</option>
+              <option value="arrimeAvg">Ordenar: AVG Arrimes</option>
+              <option value="arrimeGood">Ordenar: Arrimes Buenos (A.B)</option>
+              <option value="rastreroAvg">Ordenar: AVG Boche Rastrero</option>
+              <option value="rastreroGood">Ordenar: Boches Rastreros (B.R.E)</option>
+              <option value="aereoAvg">Ordenar: AVG Boche Aéreo</option>
+              <option value="aereoGood">Ordenar: Boches Aéreos (B.A.E)</option>
+              <option value="bocheTotalAvg">Ordenar: AVG Boche General</option>
+            </select>
+          </div>
+          <button onclick="exportStatsCSV()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition self-start sm:self-auto">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+            <span>Exportar Estadísticas (CSV)</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-900 text-white text-[10px] sm:text-[11px] uppercase tracking-wider">
+                <th class="py-3 px-3 font-bold">#</th>
+                <th class="py-3 px-3 font-bold">Jugador</th>
+                <th class="py-3 px-3 font-bold">Equipo</th>
+                <th class="py-3 px-2.5 font-bold text-center bg-emerald-950" title="Arrimes Buenos / Intentos">Arrimes (B/I)</th>
+                <th class="py-3 px-2.5 font-bold text-center bg-emerald-900 text-emerald-200" title="Average de Arrimes">AVG Arr</th>
+                <th class="py-3 px-2.5 font-bold text-center bg-amber-950" title="Boches Rastreros Efectivos / Intentos">B. Rastrero (E/I)</th>
+                <th class="py-3 px-2.5 font-bold text-center bg-amber-900 text-amber-200" title="Average de Boche Rastrero">AVG Ras</th>
+                <th class="py-3 px-2.5 font-bold text-center bg-sky-950" title="Boches Aéreos Efectivos / Intentos">B. Aéreo (E/I)</th>
+                <th class="py-3 px-2.5 font-bold text-center bg-sky-900 text-sky-200" title="Average de Boche Aéreo">AVG Aér</th>
+                <th class="py-3 px-2.5 font-bold text-center bg-slate-800" title="Total Boches Efectivos / Intentos">Tot. Boches</th>
+                <th class="py-3 px-2.5 font-bold text-center bg-slate-800 text-amber-300" title="Average de Boche General">AVG Boch</th>
+                <th class="py-3 px-3 font-bold text-center bg-indigo-950 text-indigo-200" title="Average General">AVG Gen</th>
+                <th class="py-3 px-3 font-bold text-center admin-only">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="stats-tbody" class="divide-y divide-slate-200">
+              <!-- Filas de estadísticas -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- PIE DE PÁGINA -->
+  <footer class="bg-slate-900 text-slate-400 text-xs py-5 px-4 mt-12 border-t border-slate-800 no-print">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p class="font-semibold text-slate-300">Complejo Deportivo APC Turmero • Sistema Oficial de Bolas Criollas</p>
+      <p>Guardado automático local • Canchas 1 a 4 • Horarios 07:00 PM y 09:00 PM</p>
+    </div>
+  </footer>
+
+  <!-- =========================================================================
+       LÓGICA DE APLICACIÓN (JAVASCRIPT)
+  ========================================================================== -->
+  <script>
+    /***************************************************************************
+     * 1. ESTADO GLOBAL Y PERSISTENCIA (localStorage)
+     ***************************************************************************/
+    const STORAGE_KEY = 'apc_turmero_bolas_criollas_v1';
+
+    const DEFAULT_STATE = {
+      config: {
+        tournamentName: 'Torneo Bolas Criollas • APC Turmero',
+        roundsCount: 1, // 1 o 2 vueltas
+        startDate: '2026-11-24', // Martes
+        playDays: [1, 2, 3, 4, 5], // Lunes(1) a Viernes(5)
+        targetPoints: 20, // Tantos reglamentarios por partido
+        adminPin: '', // Opcional: si tiene valor, pide PIN para entrar a Admin
+        isAdmin: true
+      },
+      teams: [],
+      players: [],
+      matches: [],
+      // Registro de actuaciones individuales por partido o jornada:
+      // { id, matchId, round, playerId, teamId, arrimeAtt, arrimeGood, rastreroAtt, rastreroGood, aereoAtt, aereoGood }
+      playerLogs: []
+    };
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          return {
+            ...DEFAULT_STATE,
+            ...parsed,
+            config: { ...DEFAULT_STATE.config, ...(parsed.config || {}) }
+          };
+        }
+      } catch (err) {
+        console.error('Error leyendo localStorage:', err);
+      }
+      return initializeSeedData();
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (err) {
+        showToast('Error al guardar en memoria local.', 'error');
+      }
+    }
+
+    /**
+     * Inicializa el torneo con los 6 equipos solicitados, planilla base y calendario equilibrado
+     */
+    function initializeSeedData() {
+      const s = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      const initialTeams = [
+        { id: 't1', name: 'Equipo 1', delegate: 'Carlos Mendoza', color: '#16a34a' },
+        { id: 't2', name: 'Equipo 2', delegate: 'José Gregorio Pérez', color: '#2563eb' },
+        { id: 't3', name: 'Equipo 3', delegate: 'Luis Alberto Rojas', color: '#d97706' },
+        { id: 't4', name: 'Equipo 4', delegate: 'Rafael Castillo', color: '#dc2626' },
+        { id: 't5', name: 'Equipo 5', delegate: 'Miguel Ángel Silva', color: '#7c3aed' },
+        { id: 't6', name: 'Equipo 6', delegate: 'Pedro Ramírez', color: '#0d9488' }
+      ];
+      s.teams = initialTeams;
+
+      // Jugadores iniciales de muestra (4 por equipo) para operar inmediatamente
+      const sampleNames = [
+        ['Juan Bolívar', 'Arrimador', '12'], ['Marco Antonio Díaz', 'Bochador', '08'], ['Héctor Gómez', 'Mixto', '05'], ['Víctor Morales', 'Bochador', '19'],
+        ['Andrés Bello', 'Arrimador', '03'], ['Simón Rodríguez', 'Bochador', '10'], ['Félix Hernández', 'Mixto', '07'], ['Oscar Martínez', 'Arrimador', '21'],
+        ['Ramón Velásquez', 'Arrimador', '04'], ['César Tovar', 'Bochador', '11'], ['Eduardo Blanco', 'Mixto', '15'], ['Jesús Briceño', 'Bochador', '22'],
+        ['Antonio Sucre', 'Arrimador', '01'], ['Daniel Flores', 'Bochador', '09'], ['Wilmer Castro', 'Mixto', '14'], ['Gustavo León', 'Arrimador', '18'],
+        ['Roberto Salas', 'Arrimador', '06'], ['Francisco Miranda', 'Bochador', '13'], ['Jorge Vargas', 'Mixto', '17'], ['Nelson Ortiz', 'Bochador', '20'],
+        ['Ángel Aponte', 'Arrimador', '02'], ['Manuel Piar', 'Bochador', '16'], ['henry Linares', 'Mixto', '23'], ['Raúl Paredes', 'Arrimador', '24']
+      ];
+
+      let pIdx = 0;
+      initialTeams.forEach((team, tIndex) => {
+        for (let i = 0; i < 4; i++) {
+          const [pName, role, num] = sampleNames[pIdx++];
+          s.players.push({
+            id: `p_${team.id}_${i + 1}`,
+            teamId: team.id,
+            name: pName,
+            cedula: `V-${14500000 + pIdx * 137}`,
+            number: num,
+            role: role
+          });
+        }
+      });
+
+      s.matches = generateBalancedSchedule(s.teams, s.config);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+      return s;
+    }
+
+    /***************************************************************************
+     * 2. ALGORITMO GENERADOR DE CALENDARIO EQUILIBRADO EN 4 CANCHAS
+     *    - Round Robin (Todos contra Todos, 1 o 2 vueltas)
+     *    - Asignación greedy de canchas (1, 2, 3, 4) minimizando varianza por equipo
+     *    - Turnos exclusivos: 07:00 PM y 09:00 PM
+     ***************************************************************************/
+    function generateBalancedSchedule(teams, config) {
+      const n = teams.length;
+      if (n < 2) return [];
+
+      // Clonar lista de IDs y agregar 'BYE' si es impar
+      const teamIds = teams.map(t => t.id);
+      const hasBye = n % 2 !== 0;
+      if (hasBye) teamIds.push('BYE');
+
+      const totalSlots = teamIds.length;
+      const roundsPerLeg = totalSlots - 1;
+      const matchesPerRound = totalSlots / 2;
+      const rawRounds = [];
+
+      // Método del círculo (Circle Method) para Round Robin
+      let rotating = teamIds.slice(1);
+      const fixed = teamIds[0];
+
+      for (let leg = 0; leg < (config.roundsCount || 1); leg++) {
+        rotating = teamIds.slice(1);
+        for (let r = 0; r < roundsPerLeg; r++) {
+          const roundPairs = [];
+          const fullList = [fixed, ...rotating];
+
+          for (let i = 0; i < matchesPerRound; i++) {
+            const tA = fullList[i];
+            const tB = fullList[totalSlots - 1 - i];
+            if (tA !== 'BYE' && tB !== 'BYE') {
+              // Alternar localía en segunda vuelta
+              const homeId = leg % 2 === 0 ? tA : tB;
+              const awayId = leg % 2 === 0 ? tB : tA;
+              roundPairs.push({ homeId, awayId });
+            }
+          }
+          rawRounds.push(roundPairs);
+          // Rotar array
+          rotating.unshift(rotating.pop());
+        }
+      }
+
+      // Rastrear cuántas veces ha jugado cada equipo en cada cancha (1..4) y cada hora
+      const courtUsage = {};
+      const timeUsage = {};
+      teams.forEach(t => {
+        courtUsage[t.id] = { 1: 0, 2: 0, 3: 0, 4: 0 };
+        timeUsage[t.id] = { '07:00 PM': 0, '09:00 PM': 0 };
+      });
+
+      // Configurar fechas hábiles a partir de config.startDate
+      let currentDate = parseLocalDate(config.startDate || '2026-11-24');
+      const allowedDays = (config.playDays && config.playDays.length > 0) ? config.playDays : [1, 2, 3, 4, 5];
+      currentDate = advanceToValidDay(currentDate, allowedDays);
+
+      const generatedMatches = [];
+      let matchCounter = 1;
+
+      rawRounds.forEach((pairs, rIndex) => {
+        const roundNum = rIndex + 1;
+
+        // Dividir los partidos de la jornada en bloques de máximo 4 canchas simultáneas por turno (07:00 PM y 09:00 PM)
+        // Para 6 equipos: 3 partidos por jornada -> se juegan en el mismo día (ej. 2 a las 07:00 PM y 1 a las 09:00 PM, o distribuidos equitativamente)
+        const totalInRound = pairs.length;
+        // Distribuir entre 07:00 PM y 09:00 PM de forma balanceada
+        const slot07Count = Math.min(4, Math.ceil(totalInRound / 2));
+
+        // Trackers de canchas ocupadas por turno en este día
+        const usedCourtsBySlot = {
+          '07:00 PM': new Set(),
+          '09:00 PM': new Set()
+        };
+
+        pairs.forEach((pair, pIdx) => {
+          // Si excede 8 partidos en un día (más de 16 equipos), avanzar día
+          const dayOffset = Math.floor(pIdx / 8);
+          const matchDateObj = addValidDays(currentDate, dayOffset, allowedDays);
+          const dateStr = formatDateISO(matchDateObj);
+
+          const slotIdxInDay = pIdx % 8;
+          // Elegir turno horario (07:00 PM o 09:00 PM) respetando capacidad de 4 canchas por turno y equilibrio
+          let chosenTime = slotIdxInDay < slot07Count ? '07:00 PM' : '09:00 PM';
+          if (usedCourtsBySlot[chosenTime].size >= 4) {
+            chosenTime = chosenTime === '07:00 PM' ? '09:00 PM' : '07:00 PM';
+          }
+
+          // Elegir la cancha disponible (1..4) que minimice la suma de apariciones de ambos equipos en esa cancha
+          let bestCourt = 1;
+          let bestScore = Infinity;
+
+          for (let c = 1; c <= 4; c++) {
+            if (usedCourtsBySlot[chosenTime].has(c)) continue;
+            const uHome = courtUsage[pair.homeId][c];
+            const uAway = courtUsage[pair.awayId][c];
+            // Penalización cuadrática para forzar igualdad exacta entre las 4 canchas
+            const score = (uHome * uHome) + (uAway * uAway) + (uHome + uAway);
+            if (score < bestScore) {
+              bestScore = score;
+              bestCourt = c;
+            }
+          }
+
+          usedCourtsBySlot[chosenTime].add(bestCourt);
+          courtUsage[pair.homeId][bestCourt]++;
+          courtUsage[pair.awayId][bestCourt]++;
+          timeUsage[pair.homeId][chosenTime]++;
+          timeUsage[pair.awayId][chosenTime]++;
+
+          generatedMatches.push({
+            id: `m_${roundNum}_${matchCounter++}`,
+            round: roundNum,
+            date: dateStr,
+            time: chosenTime,
+            court: bestCourt,
+            homeId: pair.homeId,
+            awayId: pair.awayId,
+            homeScore: null,
+            awayScore: null,
+            status: 'PENDING' // PENDING | COMPLETED
+          });
+        });
+
+        // Avanzar al siguiente día de juego para la próxima jornada
+        const daysConsumed = Math.max(1, Math.ceil(totalInRound / 8));
+        currentDate = addValidDays(currentDate, daysConsumed, allowedDays);
+      });
+
+      return generatedMatches;
+    }
+
+    // Utilidades de fechas sin desfases de zona horaria
+    function parseLocalDate(isoStr) {
+      const [y, m, d] = isoStr.split('-').map(Number);
+      return new Date(y, (m || 1) - 1, d || 1);
+    }
+    function formatDateISO(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    function formatDateHuman(isoStr) {
+      if (!isoStr) return 'Sin fecha';
+      const d = parseLocalDate(isoStr);
+      const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+    }
+    function advanceToValidDay(dateObj, allowedDays) {
+      const d = new Date(dateObj);
+      let guard = 0;
+      while (!allowedDays.includes(d.getDay()) && guard < 14) {
+        d.setDate(d.getDate() + 1);
+        guard++;
+      }
+      return d;
+    }
+    function addValidDays(dateObj, steps, allowedDays) {
+      const d = new Date(dateObj);
+      let added = 0;
+      let guard = 0;
+      while (added < steps && guard < 60) {
+        d.setDate(d.getDate() + 1);
+        if (allowedDays.includes(d.getDay())) added++;
+        guard++;
+      }
+      return d;
+    }
+
+    /***************************************************************************
+     * 3. LÓGICA DE CLASIFICACIÓN Y DESEMPATE OFICIAL DE BOLAS CRIOLLAS
+     *    Criterios:
+     *    1. Juegos Ganados (JG) / Puntos (2 pts por victoria, 0 por derrota)
+     *    2. Juegos entre sí (Enfrentamiento directo entre los equipos empatados)
+     *    3. Average (TF / TC)
+     *    4. Diferencia de Tantos (TF - TC)
+     ***************************************************************************/
+    function calculateStandings() {
+      const statsMap = {};
+      state.teams.forEach(t => {
+        statsMap[t.id] = {
+          teamId: t.id,
+          name: t.name,
+          delegate: t.delegate || '',
+          color: t.color || '#16a34a',
+          jj: 0,
+          jg: 0,
+          jp: 0,
+          tf: 0,
+          tc: 0,
+          dif: 0,
+          ave: 0,
+          pts: 0,
+          tieBreakerNote: ''
+        };
+      });
+
+      const completedMatches = state.matches.filter(m => m.status === 'COMPLETED' && m.homeScore !== null && m.awayScore !== null);
+
+      completedMatches.forEach(m => {
+        const h = statsMap[m.homeId];
+        const a = statsMap[m.awayId];
+        if (!h || !a) return;
+
+        const hs = Number(m.homeScore);
+        const as = Number(m.awayScore);
+
+        h.jj++;
+        a.jj++;
+        h.tf += hs;
+        h.tc += as;
+        a.tf += as;
+        a.tc += hs;
+
+        if (hs > as) {
+          h.jg++;
+          h.pts += 2;
+          a.jp++;
+        } else if (as > hs) {
+          a.jg++;
+          a.pts += 2;
+          h.jp++;
+        } else {
+          // En caso excepcional de empate registrado
+          h.pts += 1;
+          a.pts += 1;
+        }
+      });
+
+      const list = Object.values(statsMap).map(item => {
+        item.dif = item.tf - item.tc;
+        item.ave = item.tc === 0 ? (item.tf > 0 ? item.tf : 0) : (item.tf / item.tc);
+        return item;
+      });
+
+      // Ordenar primero por JG (y PTS) para detectar grupos empatados
+      list.sort((a, b) => {
+        if (b.jg !== a.jg) return b.jg - a.jg;
+        if (b.pts !== a.pts) return b.pts - a.pts;
+        if (b.ave !== a.ave) return b.ave - a.ave;
+        return b.dif - a.dif;
+      });
+
+      // Resolver empates de Juegos Ganados (JG) mediante mini-liga de "Juegos entre sí"
+      const finalStandings = [];
+      let i = 0;
+      while (i < list.length) {
+        let j = i + 1;
+        while (j < list.length && list[j].jg === list[i].jg && list[j].pts === list[i].pts) {
+          j++;
+        }
+
+        const tiedGroup = list.slice(i, j);
+        if (tiedGroup.length === 1) {
+          tiedGroup[0].tieBreakerNote = '—';
+          finalStandings.push(tiedGroup[0]);
+        } else {
+          // Calcular mini-tabla solo con partidos disputados entre los integrantes de tiedGroup
+          const groupIds = new Set(tiedGroup.map(t => t.teamId));
+          const h2h = {};
+          tiedGroup.forEach(t => {
+            h2h[t.teamId] = { jg: 0, tf: 0, tc: 0, played: 0 };
+          });
+
+          completedMatches.forEach(m => {
+            if (groupIds.has(m.homeId) && groupIds.has(m.awayId)) {
+              const hs = Number(m.homeScore);
+              const as = Number(m.awayScore);
+              h2h[m.homeId].played++;
+              h2h[m.awayId].played++;
+              h2h[m.homeId].tf += hs;
+              h2h[m.homeId].tc += as;
+              h2h[m.awayId].tf += as;
+              h2h[m.awayId].tc += hs;
+              if (hs > as) h2h[m.homeId].jg++;
+              else if (as > hs) h2h[m.awayId].jg++;
+            }
+          });
+
+          tiedGroup.sort((a, b) => {
+            const ha = h2h[a.teamId];
+            const hb = h2h[b.teamId];
+            // 1. Ganados entre sí
+            if (hb.jg !== ha.jg) return hb.jg - ha.jg;
+            // 2. Average entre sí (si jugaron entre ellos)
+            const aveHa = ha.tc === 0 ? ha.tf : ha.tf / ha.tc;
+            const aveHb = hb.tc === 0 ? hb.tf : hb.tf / hb.tc;
+            if (Math.abs(aveHb - aveHa) > 0.0001) return aveHb - aveHa;
+            // 3. Average general (TF / TC)
+            if (Math.abs(b.ave - a.ave) > 0.0001) return b.ave - a.ave;
+            // 4. Diferencia general
+            return b.dif - a.dif;
+          });
+
+          tiedGroup.forEach((teamItem, idx) => {
+            const rec = h2h[teamItem.teamId];
+            if (rec.played > 0) {
+              teamItem.tieBreakerNote = `Entre sí: ${rec.jg}G (${rec.tf}-${rec.tc})`;
+            } else {
+              teamItem.tieBreakerNote = `Por Average (${teamItem.ave.toFixed(3)})`;
+            }
+            finalStandings.push(teamItem);
+          });
+        }
+        i = j;
+      }
+
+      return finalStandings;
+    }
+
+    /***************************************************************************
+     * 4. LÓGICA DE ESTADÍSTICAS INDIVIDUALES DE JUGADORES
+     ***************************************************************************/
+    function calculatePlayerStats() {
+      const map = {};
+      state.players.forEach(p => {
+        const team = state.teams.find(t => t.id === p.teamId);
+        map[p.id] = {
+          playerId: p.id,
+          name: p.name,
+          number: p.number || '—',
+          role: p.role || 'Mixto',
+          teamId: p.teamId,
+          teamName: team ? team.name : 'Sin Equipo',
+          teamColor: team ? team.color : '#64748b',
+          gamesLogged: 0,
+          arrimeAtt: 0,
+          arrimeGood: 0,
+          rastreroAtt: 0,
+          rastreroGood: 0,
+          aereoAtt: 0,
+          aereoGood: 0
+        };
+      });
+
+      state.playerLogs.forEach(log => {
+        const st = map[log.playerId];
+        if (!st) return;
+        st.gamesLogged++;
+        st.arrimeAtt += Number(log.arrimeAtt || 0);
+        st.arrimeGood += Number(log.arrimeGood || 0);
+        st.rastreroAtt += Number(log.rastreroAtt || 0);
+        st.rastreroGood += Number(log.rastreroGood || 0);
+        st.aereoAtt += Number(log.aereoAtt || 0);
+        st.aereoGood += Number(log.aereoGood || 0);
+      });
+
+      return Object.values(map).map(st => {
+        st.arrimeAvg = st.arrimeAtt > 0 ? (st.arrimeGood / st.arrimeAtt) : 0;
+        st.rastreroAvg = st.rastreroAtt > 0 ? (st.rastreroGood / st.rastreroAtt) : 0;
+        st.aereoAvg = st.aereoAtt > 0 ? (st.aereoGood / st.aereoAtt) : 0;
+
+        st.bocheTotalAtt = st.rastreroAtt + st.aereoAtt;
+        st.bocheTotalGood = st.rastreroGood + st.aereoGood;
+        st.bocheTotalAvg = st.bocheTotalAtt > 0 ? (st.bocheTotalGood / st.bocheTotalAtt) : 0;
+
+        st.totalAtt = st.arrimeAtt + st.bocheTotalAtt;
+        st.totalGood = st.arrimeGood + st.bocheTotalGood;
+        st.totalAvg = st.totalAtt > 0 ? (st.totalGood / st.totalAtt) : 0;
+
+        return st;
+      });
+    }
+
+    /***************************************************************************
+     * 5. RENDERIZADO DE UI Y VISTAS
+     ***************************************************************************/
+    let currentTab = 'calendar';
+
+    function switchTab(tabName) {
+      currentTab = tabName;
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`view-${tabName}`).classList.remove('hidden');
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-emerald-950', 'shadow');
+        btn.classList.add('text-emerald-100', 'hover:bg-white/10');
+      });
+      const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+      activeBtn.classList.add('bg-white', 'text-emerald-950', 'shadow');
+      activeBtn.classList.remove('text-emerald-100', 'hover:bg-white/10');
+
+      renderAll();
+    }
+
+    function renderAll() {
+      applyRoleUI();
+      document.getElementById('header-tournament-name').textContent = state.config.tournamentName;
+      renderSummaryCards();
+      populateFilters();
+      renderCalendar();
+      renderStandings();
+      renderTeams();
+      renderStats();
+      lucide.createIcons();
+    }
+
+    function applyRoleUI() {
+      const isAdmin = state.config.isAdmin;
+      const badge = document.getElementById('role-badge');
+      const btnText = document.getElementById('btn-toggle-role-text');
+
+      if (isAdmin) {
+        badge.textContent = 'Modo Admin';
+        badge.className = 'text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-400 text-emerald-950';
+        btnText.textContent = 'Cambiar a Vista Pública';
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+      } else {
+        badge.textContent = 'Vista Pública';
+        badge.className = 'text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-300 text-slate-950';
+        btnText.textContent = 'Ingresar Modo Admin';
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+      }
+    }
+
+    function renderSummaryCards() {
+      const totalTeams = state.teams.length;
+      const totalMatches = state.matches.length;
+      const completedMatches = state.matches.filter(m => m.status === 'COMPLETED').length;
+      const totalPlayers = state.players.length;
+      const standings = calculateStandings();
+      const leader = standings.length > 0 && standings[0].jj > 0 ? standings[0] : null;
+
+      const container = document.getElementById('summary-cards');
+      container.innerHTML = `
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+            <i data-lucide="shield" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Equipos / Jugadores</p>
+            <p class="text-xl font-black text-slate-900">${totalTeams} <span class="text-xs font-semibold text-slate-500">eq • ${totalPlayers} jug</span></p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+            <i data-lucide="calendar-check" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Progreso Torneo</p>
+            <p class="text-xl font-black text-slate-900">${completedMatches} <span class="text-xs font-semibold text-slate-500">/ ${totalMatches} juegos</span></p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+            <i data-lucide="clock" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Canchas y Turnos</p>
+            <p class="text-sm font-extrabold text-slate-900">4 Canchas APC</p>
+            <p class="text-[11px] font-semibold text-slate-500">07:00 PM y 09:00 PM</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+            <i data-lucide="crown" class="w-5 h-5"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Líder Actual</p>
+            <p class="text-base font-black text-slate-900 truncate">${leader ? escapeHtml(leader.name) : 'Por definir'}</p>
+            <p class="text-[11px] font-semibold text-emerald-700">${leader ? `${leader.jg}G - ${leader.jp}P • Ave ${leader.ave.toFixed(2)}` : 'Sin resultados aún'}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function populateFilters() {
+      const roundSel = document.getElementById('filter-round');
+      const teamSel = document.getElementById('filter-team');
+      const statsTeamSel = document.getElementById('stats-filter-team');
+
+      const prevRound = roundSel.value;
+      const prevTeam = teamSel.value;
+      const prevStatsTeam = statsTeamSel.value;
+
+      const rounds = [...new Set(state.matches.map(m => m.round))].sort((a, b) => a - b);
+      roundSel.innerHTML = `<option value="ALL">Todas las Jornadas (${rounds.length})</option>` +
+        rounds.map(r => `<option value="${r}">Jornada ${r}</option>`).join('');
+      if ([...roundSel.options].some(o => o.value === prevRound)) roundSel.value = prevRound;
+
+      const teamOptions = `<option value="ALL">Todos los Equipos</option>` +
+        state.teams.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+      teamSel.innerHTML = teamOptions;
+      statsTeamSel.innerHTML = teamOptions;
+
+      if ([...teamSel.options].some(o => o.value === prevTeam)) teamSel.value = prevTeam;
+      if ([...statsTeamSel.options].some(o => o.value === prevStatsTeam)) statsTeamSel.value = prevStatsTeam;
+    }
+
+    /***************************************************************************
+     * 5.1 RENDERIZADO DEL CALENDARIO Y RESULTADOS
+     ***************************************************************************/
+    function renderCalendar() {
+      const container = document.getElementById('calendar-container');
+      const fRound = document.getElementById('filter-round').value;
+      const fTeam = document.getElementById('filter-team').value;
+      const fCourt = document.getElementById('filter-court').value;
+      const fStatus = document.getElementById('filter-status').value;
+
+      const filtered = state.matches.filter(m => {
+        if (fRound !== 'ALL' && String(m.round) !== fRound) return false;
+        if (fTeam !== 'ALL' && m.homeId !== fTeam && m.awayId !== fTeam) return false;
+        if (fCourt !== 'ALL' && String(m.court) !== fCourt) return false;
+        if (fStatus !== 'ALL' && m.status !== fStatus) return false;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center">
+            <p class="text-slate-500 font-semibold">No hay partidos que coincidan con los filtros seleccionados.</p>
+          </div>`;
+        return;
+      }
+
+      // Agrupar por Jornada
+      const grouped = {};
+      filtered.forEach(m => {
+        if (!grouped[m.round]) grouped[m.round] = [];
+        grouped[m.round].push(m);
+      });
+
+      const roundsSorted = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+
+      container.innerHTML = roundsSorted.map(roundNum => {
+        const matches = grouped[roundNum].sort((a, b) => {
+          if (a.date !== b.date) return a.date.localeCompare(b.date);
+          if (a.time !== b.time) return a.time.localeCompare(b.time);
+          return a.court - b.court;
+        });
+
+        // Detectar equipos que descansan en esta jornada (si número impar de equipos)
+        const playingIds = new Set();
+        state.matches.filter(m => m.round === roundNum).forEach(m => {
+          playingIds.add(m.homeId);
+          playingIds.add(m.awayId);
+        });
+        const restingTeams = state.teams.filter(t => !playingIds.has(t.id));
+
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-slate-900 text-white px-5 py-3 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5">
+                <span class="px-3 py-1 rounded-lg bg-emerald-500 text-emerald-950 font-black text-xs uppercase tracking-wider">
+                  Jornada ${roundNum}
+                </span>
+                <span class="text-xs text-slate-300 font-medium">
+                  ${formatDateHuman(matches[0].date)}
+                </span>
+              </div>
+              ${restingTeams.length > 0 ? `
+                <span class="text-xs bg-amber-500/20 text-amber-200 border border-amber-400/30 px-2.5 py-1 rounded-lg font-semibold">
+                  Descansa: ${restingTeams.map(t => escapeHtml(t.name)).join(', ')}
+                </span>
+              ` : ''}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 sm:p-5 bg-slate-50/60">
+              ${matches.map(m => renderMatchCard(m)).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderMatchCard(m) {
+      const home = state.teams.find(t => t.id === m.homeId) || { name: 'Equipo ?', color: '#64748b' };
+      const away = state.teams.find(t => t.id === m.awayId) || { name: 'Equipo ?', color: '#64748b' };
+      const isDone = m.status === 'COMPLETED';
+      const homeWon = isDone && Number(m.homeScore) > Number(m.awayScore);
+      const awayWon = isDone && Number(m.awayScore) > Number(m.homeScore);
+
+      const courtColors = {
+        1: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+        2: 'bg-sky-100 text-sky-800 border-sky-200',
+        3: 'bg-amber-100 text-amber-800 border-amber-200',
+        4: 'bg-purple-100 text-purple-800 border-purple-200'
+      };
+
+      return `
+        <div class="bg-white rounded-2xl border ${isDone ? 'border-emerald-200' : 'border-slate-200'} p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between">
+          <div>
+            <!-- Cabecera del partido: Cancha, Hora y Fecha -->
+            <div class="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100">
+              <span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border ${courtColors[m.court] || 'bg-slate-100'}">
+                Cancha ${m.court}
+              </span>
+              <div class="flex items-center gap-1.5 text-xs font-bold text-slate-600">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <span>${m.time}</span>
+                <span class="text-slate-300">•</span>
+                <span class="text-[11px] text-slate-500">${formatDateHuman(m.date)}</span>
+              </div>
+            </div>
+
+            <!-- Equipos y Tantos -->
+            <div class="space-y-2.5">
+              <!-- Equipo A -->
+              <div class="flex items-center justify-between gap-2 p-2 rounded-xl ${homeWon ? 'bg-emerald-50 border border-emerald-200' : 'bg-slate-50'}">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <span class="w-3 h-3 rounded-full shrink-0" style="background-color:${home.color}"></span>
+                  <span class="font-bold text-sm truncate ${homeWon ? 'text-emerald-950' : 'text-slate-800'}">
+                    ${escapeHtml(home.name)}
+                  </span>
+                </div>
+                <span class="text-lg font-black px-2.5 py-0.5 rounded-lg ${isDone ? (homeWon ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700') : 'bg-slate-200/70 text-slate-400'}">
+                  ${isDone ? m.homeScore : '—'}
+                </span>
+              </div>
+
+              <!-- Equipo B -->
+              <div class="flex items-center justify-between gap-2 p-2 rounded-xl ${awayWon ? 'bg-emerald-50 border border-emerald-200' : 'bg-slate-50'}">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <span class="w-3 h-3 rounded-full shrink-0" style="background-color:${away.color}"></span>
+                  <span class="font-bold text-sm truncate ${awayWon ? 'text-emerald-950' : 'text-slate-800'}">
+                    ${escapeHtml(away.name)}
+                  </span>
+                </div>
+                <span class="text-lg font-black px-2.5 py-0.5 rounded-lg ${isDone ? (awayWon ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700') : 'bg-slate-200/70 text-slate-400'}">
+                  ${isDone ? m.awayScore : '—'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Acciones del Partido -->
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider ${isDone ? 'text-emerald-700' : 'text-amber-600'}">
+              ${isDone ? '● Finalizado' : '○ Programado'}
+            </span>
+            <div class="flex items-center gap-1.5 admin-only">
+              <button onclick="openEditMatchModal('${m.id}')" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Editar Cancha/Hora/Fecha">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="openScoreModal('${m.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+                ${isDone ? 'Editar Tantos' : 'Cargar Resultado'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /***************************************************************************
+     * 5.2 RENDERIZADO DE TABLA DE CLASIFICACIÓN Y MATRIZ ENTRE SÍ
+     ***************************************************************************/
+    function renderStandings() {
+      const standings = calculateStandings();
+      const tbody = document.getElementById('standings-tbody');
+
+      tbody.innerHTML = standings.map((row, idx) => {
+        const pos = idx + 1;
+        const isTop = pos <= 4;
+        return `
+          <tr class="hover:bg-slate-50 transition ${pos === 1 ? 'bg-amber-50/40' : ''}">
+            <td class="py-3.5 px-4 text-center">
+              <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg font-black text-xs ${pos === 1 ? 'bg-amber-400 text-slate-950' : isTop ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">
+                ${pos}
+              </span>
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded-full shrink-0" style="background-color:${row.color}"></span>
+                <div>
+                  <p class="font-extrabold text-slate-900">${escapeHtml(row.name)}</p>
+                  <p class="text-[11px] text-slate-500">Del: ${escapeHtml(row.delegate || 'Sin asignar')}</p>
+                </div>
+              </div>
+            </td>
+            <td class="py-3.5 px-3 text-center font-bold text-slate-700">${row.jj}</td>
+            <td class="py-3.5 px-3 text-center font-black text-emerald-700">${row.jg}</td>
+            <td class="py-3.5 px-3 text-center font-bold text-rose-600">${row.jp}</td>
+            <td class="py-3.5 px-3 text-center font-semibold text-slate-700">${row.tf}</td>
+            <td class="py-3.5 px-3 text-center font-semibold text-slate-700">${row.tc}</td>
+            <td class="py-3.5 px-3 text-center font-bold ${row.dif > 0 ? 'text-emerald-700' : row.dif < 0 ? 'text-rose-600' : 'text-slate-500'}">
+              ${row.dif > 0 ? '+' + row.dif : row.dif}
+            </td>
+            <td class="py-3.5 px-3 text-center font-extrabold text-amber-700 bg-amber-50/50">
+              ${row.ave.toFixed(3)}
+            </td>
+            <td class="py-3.5 px-4 text-center font-black text-base text-emerald-950 bg-emerald-50">
+              ${row.pts}
+            </td>
+            <td class="py-3.5 px-4 text-center text-xs font-semibold text-slate-500">
+              ${escapeHtml(row.tieBreakerNote)}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Matriz de enfrentamientos directos
+      const h2hContainer = document.getElementById('h2h-matrix-container');
+      const teams = state.teams;
+      let html = `<table class="w-full text-xs border-collapse border border-slate-200">
+        <thead>
+          <tr class="bg-slate-100 text-slate-700">
+            <th class="p-2.5 border border-slate-200 text-left font-extrabold">Equipo \\ Rival</th>
+            ${teams.map(t => `<th class="p-2.5 border border-slate-200 text-center font-bold">${escapeHtml(t.name)}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>`;
+
+      teams.forEach(rowT => {
+        html += `<tr>
+          <td class="p-2.5 border border-slate-200 font-extrabold text-slate-900 bg-slate-50 whitespace-nowrap">${escapeHtml(rowT.name)}</td>`;
+        teams.forEach(colT => {
+          if (rowT.id === colT.id) {
+            html += `<td class="p-2.5 border border-slate-200 bg-slate-200/70 text-center text-slate-400">—</td>`;
+          } else {
+            const vsMatches = state.matches.filter(m =>
+              m.status === 'COMPLETED' &&
+              ((m.homeId === rowT.id && m.awayId === colT.id) || (m.homeId === colT.id && m.awayId === rowT.id))
+            );
+            if (vsMatches.length === 0) {
+              html += `<td class="p-2.5 border border-slate-200 text-center text-slate-400">Pend.</td>`;
+            } else {
+              const badges = vsMatches.map(m => {
+                const myScore = m.homeId === rowT.id ? m.homeScore : m.awayScore;
+                const oppScore = m.homeId === rowT.id ? m.awayScore : m.homeScore;
+                const won = Number(myScore) > Number(oppScore);
+                return `<span class="inline-block px-2 py-0.5 rounded font-bold ${won ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${myScore}-${oppScore}</span>`;
+              }).join(' ');
+              html += `<td class="p-2.5 border border-slate-200 text-center">${badges}</td>`;
+            }
+          }
+        });
+        html += `</tr>`;
+      });
+
+      html += `</tbody></table>`;
+      h2hContainer.innerHTML = html;
+    }
+
+    /***************************************************************************
+     * 5.3 RENDERIZADO DE EQUIPOS Y PLANILLAS DE JUGADORES
+     ***************************************************************************/
+    function renderTeams() {
+      const grid = document.getElementById('teams-grid');
+      grid.innerHTML = state.teams.map(team => {
+        const roster = state.players.filter(p => p.teamId === team.id);
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between gap-3" style="border-top: 5px solid ${team.color}">
+              <div>
+                <h3 class="text-base sm:text-lg font-black text-slate-900">${escapeHtml(team.name)}</h3>
+                <p class="text-xs text-slate-500 font-medium">Delegado: <strong class="text-slate-700">${escapeHtml(team.delegate || 'No registrado')}</strong> • ${roster.length} Jugadores</p>
+              </div>
+              <div class="flex items-center gap-1.5 admin-only">
+                <button onclick="openEditTeamModal('${team.id}')" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Editar Equipo">
+                  <i data-lucide="pencil" class="w-4 h-4"></i>
+                </button>
+                <button onclick="openAddPlayerModal('${team.id}')" class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition">
+                  <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                  <span>Jugador</span>
+                </button>
+                ${state.teams.length > 2 ? `
+                  <button onclick="confirmDeleteTeam('${team.id}')" class="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 transition" title="Eliminar Equipo">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            <div class="p-4 flex-1">
+              ${roster.length === 0 ? `
+                <p class="text-xs text-slate-400 text-center py-6">No hay jugadores registrados en esta planilla.</p>
+              ` : `
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left text-xs">
+                    <thead>
+                      <tr class="text-slate-400 border-b border-slate-100 uppercase text-[10px]">
+                        <th class="pb-2 font-bold">N°</th>
+                        <th class="pb-2 font-bold">Jugador</th>
+                        <th class="pb-2 font-bold">Cédula</th>
+                        <th class="pb-2 font-bold">Especialidad</th>
+                        <th class="pb-2 font-bold text-right admin-only">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                      ${roster.map(p => `
+                        <tr class="hover:bg-slate-50">
+                          <td class="py-2.5 font-black text-slate-500">#${escapeHtml(p.number || '0')}</td>
+                          <td class="py-2.5 font-bold text-slate-900">${escapeHtml(p.name)}</td>
+                          <td class="py-2.5 text-slate-500">${escapeHtml(p.cedula || '—')}</td>
+                          <td class="py-2.5">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                              p.role === 'Arrimador' ? 'bg-emerald-100 text-emerald-800' :
+                              p.role === 'Bochador' ? 'bg-amber-100 text-amber-800' :
+                              'bg-sky-100 text-sky-800'
+                            }">
+                              ${escapeHtml(p.role)}
+                            </span>
+                          </td>
+                          <td class="py-2.5 text-right admin-only whitespace-nowrap">
+                            <button onclick="openEditPlayerModal('${p.id}')" class="p-1 text-slate-500 hover:text-emerald-700" title="Editar">
+                              <i data-lucide="edit-2" class="w-3.5 h-3.5 inline"></i>
+                            </button>
+                            <button onclick="deletePlayer('${p.id}')" class="p-1 text-slate-400 hover:text-rose-600 ml-1" title="Eliminar">
+                              <i data-lucide="x-circle" class="w-3.5 h-3.5 inline"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /***************************************************************************
+     * 5.4 RENDERIZADO DE ESTADÍSTICAS INDIVIDUALES Y LÍDERES
+     ***************************************************************************/
+    function renderStats() {
+      const allStats = calculatePlayerStats();
+      const minAtt = Number(document.getElementById('min-attempts-filter').value || 0);
+      const teamFilter = document.getElementById('stats-filter-team').value;
+      const sortBy = document.getElementById('stats-sort-by').value;
+
+      // Líderes individuales por modalidad (ordenados por Average)
+      const topArrime = [...allStats]
+        .filter(s => s.arrimeAtt >= minAtt && s.arrimeAtt > 0)
+        .sort((a, b) => b.arrimeAvg - a.arrimeAvg || b.arrimeGood - a.arrimeGood)[0];
+
+      const topRastrero = [...allStats]
+        .filter(s => s.rastreroAtt >= minAtt && s.rastreroAtt > 0)
+        .sort((a, b) => b.rastreroAvg - a.rastreroAvg || b.rastreroGood - a.rastreroGood)[0];
+
+      const topAereo = [...allStats]
+        .filter(s => s.aereoAtt >= minAtt && s.aereoAtt > 0)
+        .sort((a, b) => b.aereoAvg - a.aereoAvg || b.aereoGood - a.aereoGood)[0];
+
+      const topBocheGen = [...allStats]
+        .filter(s => s.bocheTotalAtt >= minAtt && s.bocheTotalAtt > 0)
+        .sort((a, b) => b.bocheTotalAvg - a.bocheTotalAvg || b.bocheTotalGood - a.bocheTotalGood)[0];
+
+      const leadersEl = document.getElementById('leaders-cards');
+      leadersEl.innerHTML = [
+        {
+          title: 'Líder Arrimador',
+          badge: 'Arrimes',
+          color: 'emerald',
+          player: topArrime,
+          metric: topArrime ? topArrime.arrimeAvg.toFixed(3) : '—',
+          sub: topArrime ? `${topArrime.arrimeGood} buenos de ${topArrime.arrimeAtt} int.` : `Mín. ${minAtt} intentos`
+        },
+        {
+          title: 'Bochador Rastrero',
+          badge: 'Boche Rastrero',
+          color: 'amber',
+          player: topRastrero,
+          metric: topRastrero ? topRastrero.rastreroAvg.toFixed(3) : '—',
+          sub: topRastrero ? `${topRastrero.rastreroGood} efec. de ${topRastrero.rastreroAtt} int.` : `Mín. ${minAtt} intentos`
+        },
+        {
+          title: 'Bochador Aéreo',
+          badge: 'Boche Aéreo',
+          color: 'sky',
+          player: topAereo,
+          metric: topAereo ? topAereo.aereoAvg.toFixed(3) : '—',
+          sub: topAereo ? `${topAereo.aereoGood} efec. de ${topAereo.aereoAtt} int.` : `Mín. ${minAtt} intentos`
+        },
+        {
+          title: 'Bochador General',
+          badge: 'Rastrero + Aéreo',
+          color: 'indigo',
+          player: topBocheGen,
+          metric: topBocheGen ? topBocheGen.bocheTotalAvg.toFixed(3) : '—',
+          sub: topBocheGen ? `${topBocheGen.bocheTotalGood} efec. de ${topBocheGen.bocheTotalAtt} int.` : `Mín. ${minAtt} intentos`
+        }
+      ].map(card => `
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-${card.color}-700 bg-${card.color}-50 px-2.5 py-0.5 rounded-full border border-${card.color}-200">
+              ${card.title}
+            </span>
+            <span class="text-xl font-black text-${card.color}-700">${card.metric}</span>
+          </div>
+          <div>
+            <p class="font-extrabold text-slate-900 text-sm truncate">${card.player ? escapeHtml(card.player.name) : 'Sin calificar'}</p>
+            <p class="text-xs text-slate-500 truncate">${card.player ? `${escapeHtml(card.player.teamName)} • ${card.sub}` : card.sub}</p>
+          </div>
+        </div>
+      `).join('');
+
+      // Filtrado y ordenamiento de tabla completa
+      let filtered = allStats.filter(s => teamFilter === 'ALL' || s.teamId === teamFilter);
+      filtered.sort((a, b) => (b[sortBy] || 0) - (a[sortBy] || 0) || b.totalGood - a.totalGood);
+
+      const tbody = document.getElementById('stats-tbody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-slate-400">No hay jugadores registrados.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((st, i) => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-3 px-3 font-bold text-slate-400">${i + 1}</td>
+          <td class="py-3 px-3">
+            <p class="font-extrabold text-slate-900">${escapeHtml(st.name)}</p>
+            <p class="text-[10px] font-semibold text-slate-500">#${escapeHtml(st.number)} • ${escapeHtml(st.role)}</p>
+          </td>
+          <td class="py-3 px-3 font-semibold text-slate-700 whitespace-nowrap">
+            <span class="inline-block w-2.5 h-2.5 rounded-full mr-1.5" style="background-color:${st.teamColor}"></span>
+            ${escapeHtml(st.teamName)}
+          </td>
+          <!-- Arrimes -->
+          <td class="py-3 px-2.5 text-center font-semibold bg-emerald-50/40">${st.arrimeGood} / ${st.arrimeAtt}</td>
+          <td class="py-3 px-2.5 text-center font-black text-emerald-700 bg-emerald-50/70">${st.arrimeAvg.toFixed(3)}</td>
+          <!-- Boche Rastrero -->
+          <td class="py-3 px-2.5 text-center font-semibold bg-amber-50/40">${st.rastreroGood} / ${st.rastreroAtt}</td>
+          <td class="py-3 px-2.5 text-center font-black text-amber-700 bg-amber-50/70">${st.rastreroAvg.toFixed(3)}</td>
+          <!-- Boche Aéreo -->
+          <td class="py-3 px-2.5 text-center font-semibold bg-sky-50/40">${st.aereoGood} / ${st.aereoAtt}</td>
+          <td class="py-3 px-2.5 text-center font-black text-sky-700 bg-sky-50/70">${st.aereoAvg.toFixed(3)}</td>
+          <!-- Total Boches -->
+          <td class="py-3 px-2.5 text-center font-semibold">${st.bocheTotalGood} / ${st.bocheTotalAtt}</td>
+          <td class="py-3 px-2.5 text-center font-black text-slate-800">${st.bocheTotalAvg.toFixed(3)}</td>
+          <!-- Average General -->
+          <td class="py-3 px-3 text-center font-black text-indigo-800 bg-indigo-50/60">${st.totalAvg.toFixed(3)}</td>
+          <!-- Acción rápida individual -->
+          <td class="py-3 px-3 text-center admin-only">
+            <button onclick="openSinglePlayerStatModal('${st.playerId}')" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition">
+              + Actuación
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    /***************************************************************************
+     * 6. MODALES DE GESTIÓN (PARTIDOS, TANTOS, EQUIPOS, JUGADORES, ESTADÍSTICAS)
+     ***************************************************************************/
+    function openModal(title, bodyHtml, maxWidthClass = 'max-w-lg') {
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-body').innerHTML = bodyHtml;
+      const box = document.getElementById('app-modal-box');
+      box.className = `bg-white rounded-2xl shadow-2xl border border-slate-200 w-full ${maxWidthClass} overflow-hidden transform transition-all my-auto`;
+      const overlay = document.getElementById('app-modal');
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function closeModal() {
+      const overlay = document.getElementById('app-modal');
+      overlay.classList.add('hidden');
+      overlay.classList.remove('flex');
+    }
+
+    // 6.1 Modal: Cargar Resultado (Tantos) de un Partido
+    function openScoreModal(matchId) {
+      const m = state.matches.find(x => x.id === matchId);
+      if (!m) return;
+      const home = state.teams.find(t => t.id === m.homeId);
+      const away = state.teams.find(t => t.id === m.awayId);
+
+      openModal(`Registrar Marcador • Jornada ${m.round}`, `
+        <form onsubmit="saveMatchScore(event, '${m.id}')" class="space-y-4">
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-600 flex justify-between">
+            <span><strong>Cancha ${m.court}</strong> • ${m.time}</span>
+            <span>${formatDateHuman(m.date)}</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-white">
+              <label class="block text-xs font-extrabold text-slate-800 mb-2 truncate">${escapeHtml(home.name)}</label>
+              <input id="score-home" type="number" min="0" max="50" required value="${m.homeScore !== null ? m.homeScore : ''}" placeholder="0 - ${state.config.targetPoints}"
+                class="w-full text-center text-2xl font-black py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+            <div class="p-3.5 rounded-xl border border-slate-200 bg-white">
+              <label class="block text-xs font-extrabold text-slate-800 mb-2 truncate">${escapeHtml(away.name)}</label>
+              <input id="score-away" type="number" min="0" max="50" required value="${m.awayScore !== null ? m.awayScore : ''}" placeholder="0 - ${state.config.targetPoints}"
+                class="w-full text-center text-2xl font-black py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-3 border-t border-slate-100 gap-2">
+            ${m.status === 'COMPLETED' ? `
+              <button type="button" onclick="resetMatchScore('${m.id}')" class="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 transition">
+                Limpiar Resultado
+              </button>
+            ` : '<div></div>'}
+            <div class="flex gap-2">
+              <button type="button" onclick="closeModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">Cancelar</button>
+              <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow">Guardar Tantos</button>
+            </div>
+          </div>
+        </form>
+      `);
+    }
+
+    function saveMatchScore(e, matchId) {
+      e.preventDefault();
+      const m = state.matches.find(x => x.id === matchId);
+      if (!m) return;
+      const hs = Number(document.getElementById('score-home').value);
+      const as = Number(document.getElementById('score-away').value);
+      if (hs === as) {
+        showToast('En Bolas Criollas debe haber un ganador (los tantos no pueden quedar empatados).', 'error');
+        return;
+      }
+      m.homeScore = hs;
+      m.awayScore = as;
+      m.status = 'COMPLETED';
+      saveState();
+      closeModal();
+      renderAll();
+      showToast('Marcador guardado y tabla de posiciones actualizada.', 'success');
+    }
+
+    function resetMatchScore(matchId) {
+      const m = state.matches.find(x => x.id === matchId);
+      if (!m) return;
+      m.homeScore = null;
+      m.awayScore = null;
+      m.status = 'PENDING';
+      saveState();
+      closeModal();
+      renderAll();
+      showToast('Partido vuelto a estado programado.', 'info');
+    }
+
+    // 6.2 Modal: Edición Manual de Cancha, Hora y Fecha de un Partido
+    function openEditMatchModal(matchId) {
+      const m = state.matches.find(x => x.id === matchId);
+      if (!m) return;
+      const home = state.teams.find(t => t.id === m.homeId);
+      const away = state.teams.find(t => t.id === m.awayId);
+
+      openModal(`Programación del Partido • Jornada ${m.round}`, `
+        <form onsubmit="saveMatchSchedule(event, '${m.id}')" class="space-y-4">
+          <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-center font-extrabold text-emerald-950 text-sm">
+            ${escapeHtml(home.name)} <span class="text-emerald-600 mx-1">VS</span> ${escapeHtml(away.name)}
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Fecha</label>
+              <input id="edit-match-date" type="date" value="${m.date}" required class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Turno Horario</label>
+              <select id="edit-match-time" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold">
+                <option value="07:00 PM" ${m.time === '07:00 PM' ? 'selected' : ''}>07:00 PM</option>
+                <option value="09:00 PM" ${m.time === '09:00 PM' ? 'selected' : ''}>09:00 PM</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Cancha</label>
+              <select id="edit-match-court" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold">
+                ${[1, 2, 3, 4].map(c => `<option value="${c}" ${Number(m.court) === c ? 'selected' : ''}>Cancha ${c}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700">Cancelar</button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700">Guardar Cambios</button>
+          </div>
+        </form>
+      `);
+    }
+
+    function saveMatchSchedule(e, matchId) {
+      e.preventDefault();
+      const m = state.matches.find(x => x.id === matchId);
+      if (!m) return;
+      m.date = document.getElementById('edit-match-date').value;
+      m.time = document.getElementById('edit-match-time').value;
+      m.court = Number(document.getElementById('edit-match-court').value);
+      saveState();
+      closeModal();
+      renderAll();
+      showToast('Horario y cancha actualizados.', 'success');
+    }
+
+    // 6.3 Modal: Verificador de Equilibrio de Canchas y Horarios por Equipo
+    function openCourtBalanceModal() {
+      const matrix = state.teams.map(t => {
+        const counts = { 1: 0, 2: 0, 3: 0, 4: 0, t7: 0, t9: 0, total: 0 };
+        state.matches.forEach(m => {
+          if (m.homeId === t.id || m.awayId === t.id) {
+            counts[m.court] = (counts[m.court] || 0) + 1;
+            if (m.time === '07:00 PM') counts.t7++;
+            if (m.time === '09:00 PM') counts.t9++;
+            counts.total++;
+          }
+        });
+        return { team: t, counts };
+      });
+
+      openModal('Distribución Equitativa por Cancha y Horario', `
+        <div class="space-y-3">
+          <p class="text-xs text-slate-600">
+            Verificación de igualdad de partidos por cada una de las <strong>4 Canchas del Complejo APC Turmero</strong> y turnos de 07:00 PM / 09:00 PM.
+          </p>
+          <div class="overflow-x-auto border border-slate-200 rounded-xl">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-900 text-white">
+                <tr>
+                  <th class="p-2.5">Equipo</th>
+                  <th class="p-2.5 text-center">Cancha 1</th>
+                  <th class="p-2.5 text-center">Cancha 2</th>
+                  <th class="p-2.5 text-center">Cancha 3</th>
+                  <th class="p-2.5 text-center">Cancha 4</th>
+                  <th class="p-2.5 text-center bg-slate-800">07:00 PM</th>
+                  <th class="p-2.5 text-center bg-slate-800">09:00 PM</th>
+                  <th class="p-2.5 text-center bg-emerald-950">Total</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200">
+                ${matrix.map(r => `
+                  <tr>
+                    <td class="p-2.5 font-bold text-slate-900">${escapeHtml(r.team.name)}</td>
+                    <td class="p-2.5 text-center font-semibold">${r.counts[1]}</td>
+                    <td class="p-2.5 text-center font-semibold">${r.counts[2]}</td>
+                    <td class="p-2.5 text-center font-semibold">${r.counts[3]}</td>
+                    <td class="p-2.5 text-center font-semibold">${r.counts[4]}</td>
+                    <td class="p-2.5 text-center text-amber-700 font-bold bg-amber-50/40">${r.counts.t7}</td>
+                    <td class="p-2.5 text-center text-indigo-700 font-bold bg-indigo-50/40">${r.counts.t9}</td>
+                    <td class="p-2.5 text-center font-black bg-emerald-50 text-emerald-900">${r.counts.total}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          <div class="flex justify-end pt-2">
+            <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white">Cerrar</button>
+          </div>
+        </div>
+      `, 'max-w-2xl');
+    }
+
+    // 6.4 Gestión de Equipos (Agregar / Editar / Eliminar con regeneración)
+    function openAddTeamModal() {
+      const nextNum = state.teams.length + 1;
+      const palette = ['#16a34a', '#2563eb', '#d97706', '#dc2626', '#7c3aed', '#0d9488', '#db2777', '#4f46e5', '#ea580c'];
+      const defaultColor = palette[(nextNum - 1) % palette.length];
+
+      openModal('Agregar Nuevo Equipo al Torneo', `
+        <form onsubmit="addNewTeam(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del Equipo</label>
+            <input id="new-team-name" type="text" required value="Equipo ${nextNum}" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold">
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-bold text-slate-700 mb-1">Delegado / Capitán</label>
+              <input id="new-team-delegate" type="text" placeholder="Nombre del delegado" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Color Distintivo</label>
+              <input id="new-team-color" type="color" value="${defaultColor}" class="w-full h-10 rounded-xl border border-slate-300 p-1 cursor-pointer">
+            </div>
+          </div>
+          <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 bg-amber-50 p-3 rounded-xl border border-amber-200 cursor-pointer">
+            <input id="new-team-regen" type="checkbox" checked class="rounded text-emerald-600">
+            <span>Regenerar automáticamente el calendario equilibrado con este equipo</span>
+          </label>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700">Cancelar</button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700">Agregar Equipo</button>
+          </div>
+        </form>
+      `);
+    }
+
+    function addNewTeam(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-team-name').value.trim();
+      const delegate = document.getElementById('new-team-delegate').value.trim();
+      const color = document.getElementById('new-team-color').value;
+      const regen = document.getElementById('new-team-regen').checked;
+
+      if (!name) return;
+      const newTeam = {
+        id: 't_' + Date.now(),
+        name,
+        delegate,
+        color
+      };
+      state.teams.push(newTeam);
+
+      if (regen) {
+        state.matches = generateBalancedSchedule(state.teams, state.config);
+      }
+      saveState();
+      closeModal();
+      renderAll();
+      showToast(`"${name}" agregado (${state.teams.length} equipos en total).`, 'success');
+    }
+
+    function openEditTeamModal(teamId) {
+      const t = state.teams.find(x => x.id === teamId);
+      if (!t) return;
+      openModal('Editar Datos del Equipo', `
+        <form onsubmit="saveTeamEdit(event, '${t.id}')" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del Equipo</label>
+            <input id="edit-team-name" type="text" required value="${escapeHtml(t.name)}" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold">
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-bold text-slate-700 mb-1">Delegado</label>
+              <input id="edit-team-delegate" type="text" value="${escapeHtml(t.delegate || '')}" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Color</label>
+              <input id="edit-team-color" type="color" value="${t.color || '#16a34a'}" class="w-full h-10 rounded-xl border border-slate-300 p-1">
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700">Cancelar</button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white">Guardar</button>
+          </div>
+        </form>
+      `);
+    }
+
+    function saveTeamEdit(e, teamId) {
+      e.preventDefault();
+      const t = state.teams.find(x => x.id === teamId);
+      if (!t) return;
+      t.name = document.getElementById('edit-team-name').value.trim();
+      t.delegate = document.getElementById('edit-team-delegate').value.trim();
+      t.color = document.getElementById('edit-team-color').value;
+      saveState();
+      closeModal();
+      renderAll();
+      showToast('Datos del equipo actualizados.', 'success');
+    }
+
+    function confirmDeleteTeam(teamId) {
+      const t = state.teams.find(x => x.id === teamId);
+      if (!t) return;
+      openModal('Eliminar Equipo', `
+        <div class="space-y-4">
+          <p class="text-sm text-slate-700">¿Deseas eliminar a <strong>${escapeHtml(t.name)}</strong> y regenerar el calendario con los ${state.teams.length - 1} equipos restantes?</p>
+          <div class="flex justify-end gap-2">
+            <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700">Cancelar</button>
+            <button onclick="executeDeleteTeam('${teamId}')" class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-700">Eliminar y Regenerar</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function executeDeleteTeam(teamId) {
+      state.teams = state.teams.filter(t => t.id !== teamId);
+      state.players = state.players.filter(p => p.teamId !== teamId);
+      state.playerLogs = state.playerLogs.filter(l => l.teamId !== teamId);
+      state.matches = generateBalancedSchedule(state.teams, state.config);
+      saveState();
+      closeModal();
+      renderAll();
+      showToast('Equipo eliminado y calendario equilibrado actualizado.', 'info');
+    }
+
+    function confirmRegenerateSchedule() {
+      openModal('Regenerar Calendario Equilibrado', `
+        <div class="space-y-4">
+          <p class="text-sm text-slate-700">
+            Se generará un nuevo calendario Round Robin para los <strong>${state.teams.length} equipos</strong> distribuidos equitativamente entre las <strong>4 canchas</strong> en turnos de <strong>07:00 PM y 09:00 PM</strong>.
+          </p>
+          <p class="text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200 font-semibold">
+            Nota: Esto reiniciará los marcadores actuales de los partidos. Las planillas de jugadores se mantienen intactas.
+          </p>
+          <div class="flex justify-end gap-2">
+            <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700">Cancelar</button>
+            <button onclick="executeRegenerateSchedule()" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700">Sí, Regenerar</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function executeRegenerateSchedule() {
+      state.matches = generateBalancedSchedule(state.teams, state.config);
+      saveState();
+      closeModal();
+      renderAll();
+      showToast('Nuevo calendario equilibrado generado con éxito.', 'success');
+    }
+
+    // 6.5 Gestión de Jugadores (Agregar / Editar / Eliminar)
+    function openAddPlayerModal(teamId) {
+      const team = state.teams.find(t => t.id === teamId);
+      openModal(`Agregar Jugador • ${team ? team.name : ''}`, `
+        <form onsubmit="saveNewPlayer(event, '${teamId}')" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nombre Completo del Jugador</label>
+            <input id="pl-name" type="text" required placeholder="Ej. Roberto Zambrano" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-semibold">
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">N° Camisa</label>
+              <input id="pl-number" type="text" placeholder="10" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Cédula / Ficha</label>
+              <input id="pl-cedula" type="text" placeholder="V-18234567" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Especialidad</label>
+              <select id="pl-role" class="w-full rounded-xl border border-slate-300 px-2.5 py-2 text-sm font-semibold">
+                <option value="Arrimador">Arrimador</option>
+                <option value="Bochador">Bochador</option>
+                <option value="Mixto" selected>Mixto</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700">Cancelar</button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700">Registrar Jugador</button>
+          </div>
+        </form>
+      `);
+    }
+
+    function saveNewPlayer(e, teamId) {
+      e.preventDefault();
+      state.players.push({
+        id: 'p_' + Date.now(),
+        teamId,
+        name: document.getElementById('pl-name').value.trim(),
+        number: document.getElementById('pl-number').value.trim(),
+        cedula: document.getElementById('pl-cedula').value.trim(),
+        role: document.getElementById('pl-role').value
+      });
+      saveState();
+      closeModal();
+      renderAll();
+      showToast('Jugador incorporado a la planilla.', 'success');
+    }
+
+    function openEditPlayerModal(playerId) {
+      const p = state.players.find(x => x.id === playerId);
+      if (!p) return;
+      openModal('Editar Jugador', `
+        <form onsubmit="savePlayerEdit(event, '${p.id}')" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nombre Completo</label>
+            <input id="epl-name" type="text" required value="${escapeHtml(p.name)}" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-semibold">
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">N° Camisa</label>
+              <input id="epl-number" type="text" value="${escapeHtml(p.number || '')}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Cédula</label>
+              <input id="epl-cedula" type="text" value="${escapeHtml(p.cedula || '')}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Especialidad</label>
+              <select id="epl-role" class="w-full rounded-xl border border-slate-300 px-2.5 py-2 text-sm font-semibold">
+                <option value="Arrimador" ${p.role === 'Arrimador' ? 'selected' : ''}>Arrimador</option>
+                <option value="Bochador" ${p.role === 'Bochador' ? 'selected' : ''}>Bochador</option>
+                <option value="Mixto" ${p.role === 'Mixto' ? 'selected' : ''}>Mixto</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700">Cancelar</button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white">Actualizar</button>
+          </div>
+        </form>
+      `);
+    }
+
+    function savePlayerEdit(e, playerId) {
+      e.preventDefault();
+      const p = state.players.find(x => x.id === playerId);
+      if (!p) return;
+      p.name = document.getElementById('epl-name').value.trim();
+      p.number = document.getElementById('epl-number').value.trim();
+      p.cedula = document.getElementById('epl-cedula').value.trim();
+      p.role = document.getElementById('epl-role').value;
+      saveState();
+      closeModal();
+      renderAll();
+      showToast('Ficha del jugador actualizada.', 'success');
+    }
+
+    function deletePlayer(playerId) {
+      state.players = state.players.filter(p => p.id !== playerId);
+      state.playerLogs = state.playerLogs.filter(l => l.playerId !== playerId);
+      saveState();
+      renderAll();
+      showToast('Jugador retirado de la planilla.', 'info');
+    }
+
+    // 6.6 Carga de Estadísticas Individuales (Individual y por Lote de Equipo/Jornada)
+    function openSinglePlayerStatModal(playerId) {
+      const p = state.players.find(x => x.id === playerId);
+      if (!p) return;
+      const team = state.teams.find(t => t.id === p.teamId);
+
+      openModal(`Registrar Actuación • ${p.name}`, `
+        <form onsubmit="saveSinglePlayerStat(event, '${p.id}')" class="space-y-4">
+          <div class="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200 flex justify-between">
+            <span>Equipo: <strong>${escapeHtml(team ? team.name : '')}</strong></span>
+            <span>Rol: <strong>${escapeHtml(p.role)}</strong></span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Jornada / Referencia</label>
+            <select id="sp-round" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold">
+              ${[...new Set(state.matches.map(m => m.round))].map(r => `<option value="${r}">Jornada ${r}</option>`).join('')}
+            </select>
+          </div>
+
+          <!-- Arrimes -->
+          <div class="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-extrabold text-emerald-900">1. Arrimes</p>
+              <span id="live-avg-arr" class="text-xs font-black text-emerald-700">AVG: 0.000</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600">Intentos (A.I)</label>
+                <input id="sp-arr-att" type="number" min="0" value="0" oninput="updateSingleStatLiveAvgs()" required class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-bold">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600">Buenos / Efectivos (A.B)</label>
+                <input id="sp-arr-good" type="number" min="0" value="0" oninput="updateSingleStatLiveAvgs()" required class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-bold">
+              </div>
+            </div>
+          </div>
+
+          <!-- Boches Rastreros -->
+          <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-extrabold text-amber-900">2. Boches Rastreros</p>
+              <span id="live-avg-ras" class="text-xs font-black text-amber-700">AVG: 0.000</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600">Intentos (B.R.I)</label>
+                <input id="sp-ras-att" type="number" min="0" value="0" oninput="updateSingleStatLiveAvgs()" required class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-bold">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600">Efectivos (B.R.E)</label>
+                <input id="sp-ras-good" type="number" min="0" value="0" oninput="updateSingleStatLiveAvgs()" required class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-bold">
+              </div>
+            </div>
+          </div>
+
+          <!-- Boches Aéreos -->
+          <div class="p-3 rounded-xl bg-sky-50/70 border border-sky-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-extrabold text-sky-900">3. Boches Aéreos (De aire / Mingo)</p>
+              <span id="live-avg-aer" class="text-xs font-black text-sky-700">AVG: 0.000</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600">Intentos (B.A.I)</label>
+                <input id="sp-aer-att" type="number" min="0" value="0" oninput="updateSingleStatLiveAvgs()" required class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-bold">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600">Efectivos (B.A.E)</label>
+                <input id="sp-aer-good" type="number" min="0" value="0" oninput="updateSingleStatLiveAvgs()" required class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-bold">
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700">Cancelar</button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700">Sumar Estadística</button>
+          </div>
+        </form>
+      `);
+      updateSingleStatLiveAvgs();
+    }
+
+    function updateSingleStatLiveAvgs() {
+      const calcAvg = (goodId, attId) => {
+        const g = Number(document.getElementById(goodId)?.value || 0);
+        const a = Number(document.getElementById(attId)?.value || 0);
+        return a > 0 ? (g / a).toFixed(3) : '0.000';
+      };
+      const arrEl = document.getElementById('live-avg-arr');
+      const rasEl = document.getElementById('live-avg-ras');
+      const aerEl = document.getElementById('live-avg-aer');
+      if (arrEl) arrEl.textContent = `AVG: ${calcAvg('sp-arr-good', 'sp-arr-att')}`;
+      if (rasEl) rasEl.textContent = `AVG: ${calcAvg('sp-ras-good', 'sp-ras-att')}`;
+      if (aerEl) aerEl.textContent = `AVG: ${calcAvg('sp-aer-good', 'sp-aer-att')}`;
+    }
+
+    function updateSingleStatPreviews() {
+      const pairs = [
+        ['sp-arr-att', 'sp-arr-good', 'sp-arr-preview'],
+        ['sp-ras-att', 'sp-ras-good', 'sp-ras-preview'],
+        ['sp-aer-att', 'sp-aer-good', 'sp-aer-preview']
+      ];
+      pairs.forEach(([attId, goodId, badgeId]) => {
+        const att = Number(document.getElementById(attId)?.value || 0);
+        const good = Number(document.getElementById(goodId)?.value || 0);
+        const badge = document.getElementById(badgeId);
+        if (!badge) return;
+        const pct = att > 0 ? ((good / att) * 100).toFixed(1) : '0.0';
+        const avg = att > 0 ? (good / att).toFixed(3) : '0.000';
+        badge.textContent = `${pct}% • AVG ${avg}`;
+      });
+    }
+
+    function saveSinglePlayerStat(e, playerId) {
+      e.preventDefault();
+      const p = state.players.find(x => x.id === playerId);
+      if (!p) return;
+
+      const arrimeAtt = Number(document.getElementById('sp-arr-att').value);
+      const arrimeGood = Number(document.getElementById('sp-arr-good').value);
+      const rastreroAtt = Number(document.getElementById('sp-ras-att').value);
+      const rastreroGood = Number(document.getElementById('sp-ras-good').value);
+      const aereoAtt = Number(document.getElementById('sp-aer-att').value);
+      const aereoGood = Number(document.getElementById('sp-aer-good').value);
+
+      if (arrimeGood > arrimeAtt || rastreroGood > rastreroAtt || aereoGood > aereoAtt) {
+        showToast('Las jugadas efectivas no pueden superar los intentos realizados.', 'error');
+        return;
+      }
+
+      state.playerLogs.push({
+        id: 'log_' + Date.now(),
+        round: Number(document.getElementById('sp-round').value),
+        playerId: p.id,
+        teamId: p.teamId,
+        arrimeAtt,
+        arrimeGood,
+        rastreroAtt,
+        rastreroGood,
+        aereoAtt,
+        aereoGood
+      });
+
+      saveState();
+      closeModal();
+      renderAll();
+      showToast(`Actuación sumada a ${p.name}.`, 'success');
+    }
+
+    // Modal Carga Masiva por Equipo / Jornada
+    function openBatchStatsModal() {
+      const firstTeam = state.teams[0];
+      openModal('Carga Rápida de Estadísticas por Equipo', `
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Seleccionar Equipo</label>
+              <select id="batch-team-select" onchange="renderBatchRosterRows()" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-bold">
+                ${state.teams.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Jornada</label>
+              <select id="batch-round-select" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-bold">
+                ${[...new Set(state.matches.map(m => m.round))].map(r => `<option value="${r}">Jornada ${r}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <div id="batch-roster-table" class="overflow-x-auto border border-slate-200 rounded-xl"></div>
+
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700">Cancelar</button>
+            <button type="button" onclick="saveBatchStats()" class="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow">Guardar Planilla de Actuación</button>
+          </div>
+        </div>
+      `, 'max-w-3xl');
+      if (firstTeam) renderBatchRosterRows();
+    }
+
+    function renderBatchRosterRows() {
+      const teamId = document.getElementById('batch-team-select').value;
+      const roster = state.players.filter(p => p.teamId === teamId);
+      const container = document.getElementById('batch-roster-table');
+
+      if (roster.length === 0) {
+        container.innerHTML = `<p class="p-4 text-xs text-slate-500 text-center">Este equipo no tiene jugadores registrados.</p>`;
+        return;
+      }
+
+      container.innerHTML = `
+        <table class="w-full text-xs text-left">
+          <thead class="bg-slate-900 text-white text-[10px] uppercase">
+            <tr>
+              <th class="p-2.5">Jugador</th>
+              <th class="p-2 text-center bg-emerald-950">Arr. Int</th>
+              <th class="p-2 text-center bg-emerald-900">Arr. Bue</th>
+              <th class="p-2 text-center bg-amber-950">Ras. Int</th>
+              <th class="p-2 text-center bg-amber-900">Ras. Efe</th>
+              <th class="p-2 text-center bg-sky-950">Aér. Int</th>
+              <th class="p-2 text-center bg-sky-900">Aér. Efe</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            ${roster.map(p => `
+              <tr data-player-id="${p.id}" class="batch-player-row">
+                <td class="p-2.5 font-bold text-slate-900 whitespace-nowrap">${escapeHtml(p.name)}</td>
+                <td class="p-1.5 text-center"><input type="number" min="0" value="0" class="b-arr-i w-14 text-center border border-slate-300 rounded-lg py-1 font-bold"></td>
+                <td class="p-1.5 text-center"><input type="number" min="0" value="0" class="b-arr-g w-14 text-center border border-emerald-300 bg-emerald-50 rounded-lg py-1 font-bold"></td>
+                <td class="p-1.5 text-center"><input type="number" min="0" value="0" class="b-ras-i w-14 text-center border border-slate-300 rounded-lg py-1 font-bold"></td>
+                <td class="p-1.5 text-center"><input type="number" min="0" value="0" class="b-ras-g w-14 text-center border border-amber-300 bg-amber-50 rounded-lg py-1 font-bold"></td>
+                <td class="p-1.5 text-center"><input type="number" min="0" value="0" class="b-aer-i w-14 text-center border border-slate-300 rounded-lg py-1 font-bold"></td>
+                <td class="p-1.5 text-center"><input type="number" min="0" value="0" class="b-aer-g w-14 text-center border border-sky-300 bg-sky-50 rounded-lg py-1 font-bold"></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function saveBatchStats() {
+      const teamId = document.getElementById('batch-team-select').value;
+      const round = Number(document.getElementById('batch-round-select').value);
+      const rows = document.querySelectorAll('.batch-player-row');
+      let savedCount = 0;
+
+      for (const row of rows) {
+        const playerId = row.getAttribute('data-player-id');
+        const arrimeAtt = Number(row.querySelector('.b-arr-i').value || 0);
+        const arrimeGood = Number(row.querySelector('.b-arr-g').value || 0);
+        const rastreroAtt = Number(row.querySelector('.b-ras-i').value || 0);
+        const rastreroGood = Number(row.querySelector('.b-ras-g').value || 0);
+        const aereoAtt = Number(row.querySelector('.b-aer-i').value || 0);
+        const aereoGood = Number(row.querySelector('.b-aer-g').value || 0);
+
+        if (arrimeGood > arrimeAtt || rastreroGood > rastreroAtt || aereoGood > aereoAtt) {
+          showToast('Error: Hay jugadas efectivas mayores a los intentos.', 'error');
+          return;
+        }
+
+        if (arrimeAtt > 0 || rastreroAtt > 0 || aereoAtt > 0) {
+          state.playerLogs.push({
+            id: `log_${Date.now()}_${savedCount}`,
+            round,
+            playerId,
+            teamId,
+            arrimeAtt,
+            arrimeGood,
+            rastreroAtt,
+            rastreroGood,
+            aereoAtt,
+            aereoGood
+          });
+          savedCount++;
+        }
+      }
+
+      saveState();
+      closeModal();
+      renderAll();
+      showToast(`Se registraron actuaciones para ${savedCount} jugador(es).`, 'success');
+    }
+
+    /***************************************************************************
+     * 7. CONFIGURACIÓN DEL TORNEO, MODO PÚBLICO/ADMIN Y EXPORTACIÓN
+     ***************************************************************************/
+    function toggleAdminMode() {
+      if (state.config.isAdmin) {
+        state.config.isAdmin = false;
+        saveState();
+        renderAll();
+        showToast('Modo Vista Pública activado (solo lectura).', 'info');
+      } else {
+        if (state.config.adminPin) {
+          openModal('Acceso Administrador', `
+            <form onsubmit="verifyAdminPin(event)" class="space-y-4">
+              <p class="text-xs text-slate-600">Ingresa el PIN de administrador configurado para habilitar la edición.</p>
+              <input id="pin-input" type="password" required placeholder="PIN" class="w-full text-center text-lg font-black tracking-widest rounded-xl border border-slate-300 py-2.5">
+              <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100">Cancelar</button>
+                <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white">Desbloquear</button>
+              </div>
+            </form>
+          `);
+        } else {
+          state.config.isAdmin = true;
+          saveState();
+          renderAll();
+          showToast('Modo Administrador habilitado.', 'success');
+        }
+      }
+    }
+
+    function verifyAdminPin(e) {
+      e.preventDefault();
+      const val = document.getElementById('pin-input').value;
+      if (val === state.config.adminPin) {
+        state.config.isAdmin = true;
+        saveState();
+        closeModal();
+        renderAll();
+        showToast('Acceso concedido.', 'success');
+      } else {
+        showToast('PIN incorrecto.', 'error');
+      }
+    }
+
+    function openSettingsModal() {
+      const days = [
+        { d: 1, label: 'Lun' }, { d: 2, label: 'Mar' }, { d: 3, label: 'Mié' },
+        { d: 4, label: 'Jue' }, { d: 5, label: 'Vie' }, { d: 6, label: 'Sáb' }, { d: 0, label: 'Dom' }
+      ];
+
+      openModal('Configuración General del Torneo', `
+        <form onsubmit="saveTournamentSettings(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nombre del Torneo / Sede</label>
+            <input id="cfg-name" type="text" required value="${escapeHtml(state.config.tournamentName)}" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-bold">
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Vueltas Round Robin</label>
+              <select id="cfg-rounds" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold">
+                <option value="1" ${state.config.roundsCount === 1 ? 'selected' : ''}>1 Vuelta</option>
+                <option value="2" ${state.config.roundsCount === 2 ? 'selected' : ''}>2 Vueltas (Ida y Vuelta)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Fecha de Inicio</label>
+              <input id="cfg-start" type="date" value="${state.config.startDate}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Tantos por Juego</label>
+              <input id="cfg-points" type="number" min="10" max="40" value="${state.config.targetPoints}" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-bold">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Días Hábiles de Juego (Turnos 07:00 PM y 09:00 PM)</label>
+            <div class="flex flex-wrap gap-2">
+              ${days.map(item => `
+                <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-slate-50 text-xs font-bold cursor-pointer">
+                  <input type="checkbox" class="cfg-day" value="${item.d}" ${state.config.playDays.includes(item.d) ? 'checked' : ''}>
+                  <span>${item.label}</span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">PIN de Seguridad Administrador (Opcional)</label>
+            <input id="cfg-pin" type="text" maxlength="8" value="${escapeHtml(state.config.adminPin || '')}" placeholder="Dejar vacío para acceso libre" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm">
+          </div>
+
+          <label class="flex items-center gap-2 text-xs font-semibold text-amber-800 bg-amber-50 p-3 rounded-xl border border-amber-200 cursor-pointer">
+            <input id="cfg-regen-now" type="checkbox">
+            <span>Regenerar calendario ahora aplicando estas fechas y vueltas</span>
+          </label>
+
+          <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+            <button type="button" onclick="resetFactoryData()" class="text-xs font-bold text-rose-600 hover:underline">Restaurar Datos Iniciales</button>
+            <div class="flex gap-2">
+              <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100">Cancelar</button>
+              <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white">Guardar Configuración</button>
+            </div>
+          </div>
+        </form>
+      `);
+    }
+
+    function saveTournamentSettings(e) {
+      e.preventDefault();
+      const selectedDays = [...document.querySelectorAll('.cfg-day:checked')].map(el => Number(el.value));
+      state.config.tournamentName = document.getElementById('cfg-name').value.trim();
+      state.config.roundsCount = Number(document.getElementById('cfg-rounds').value);
+      state.config.startDate = document.getElementById('cfg-start').value;
+      state.config.targetPoints = Number(document.getElementById('cfg-points').value);
+      state.config.playDays = selectedDays.length > 0 ? selectedDays : [1, 2, 3, 4, 5];
+      state.config.adminPin = document.getElementById('cfg-pin').value.trim();
+
+      if (document.getElementById('cfg-regen-now').checked) {
+        state.matches = generateBalancedSchedule(state.teams, state.config);
+      }
+
+      saveState();
+      closeModal();
+      renderAll();
+      showToast('Configuración del torneo guardada.', 'success');
+    }
+
+    function resetFactoryData() {
+      localStorage.removeItem(STORAGE_KEY);
+      state = initializeSeedData();
+      closeModal();
+      renderAll();
+      showToast('Torneo restaurado con los 6 equipos iniciales y calendario equilibrado.', 'info');
+    }
+
+    /***************************************************************************
+     * 8. EXPORTACIÓN EXCEL (CSV) Y RESPALDO JSON
+     ***************************************************************************/
+    function openExportImportModal() {
+      openModal('Exportar Reportes Excel y Respaldo JSON', `
+        <div class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <button onclick="exportCalendarCSV()" class="p-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-bold flex flex-col items-center gap-1.5 transition">
+              <i data-lucide="calendar" class="w-5 h-5 text-emerald-700"></i>
+              <span>Calendario (Excel)</span>
+            </button>
+            <button onclick="exportStandingsCSV()" class="p-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold flex flex-col items-center gap-1.5 transition">
+              <i data-lucide="trophy" class="w-5 h-5 text-amber-700"></i>
+              <span>Clasificación (Excel)</span>
+            </button>
+            <button onclick="exportStatsCSV()" class="p-3 rounded-xl border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-900 text-xs font-bold flex flex-col items-center gap-1.5 transition">
+              <i data-lucide="bar-chart-2" class="w-5 h-5 text-sky-700"></i>
+              <span>Estadísticas (Excel)</span>
+            </button>
+          </div>
+
+          <div class="border-t border-slate-200 pt-4 space-y-3">
+            <p class="text-xs font-extrabold text-slate-800">Respaldo Completo de Seguridad (.JSON)</p>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="downloadJSONBackup()" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Descargar Respaldo JSON</span>
+              </button>
+              <label class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-300 cursor-pointer">
+                <i data-lucide="upload" class="w-4 h-4"></i>
+                <span>Restaurar desde JSON</span>
+                <input type="file" accept=".json" onchange="importJSONBackup(event)" class="hidden">
+              </label>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    function downloadCSV(filename, rows) {
+      const BOM = '\uFEFF';
+      const csvContent = BOM + rows.map(r => r.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Archivo ${filename} descargado.`, 'success');
+    }
+
+    function exportCalendarCSV() {
+      const rows = [['Jornada', 'Fecha', 'Hora', 'Cancha', 'Equipo Local', 'Tantos Local', 'Tantos Visitante', 'Equipo Visitante', 'Estado']];
+      state.matches.forEach(m => {
+        const h = state.teams.find(t => t.id === m.homeId)?.name || '';
+        const a = state.teams.find(t => t.id === m.awayId)?.name || '';
+        rows.push([m.round, m.date, m.time, `Cancha ${m.court}`, h, m.homeScore ?? '', m.awayScore ?? '', a, m.status === 'COMPLETED' ? 'Finalizado' : 'Programado']);
+      });
+      downloadCSV('Calendario_APC_Turmero.csv', rows);
+    }
+
+    function exportStandingsCSV() {
+      const st = calculateStandings();
+      const rows = [['Pos', 'Equipo', 'Delegado', 'JJ', 'JG', 'JP', 'TF', 'TC', 'DIF', 'AVE', 'PTS', 'Criterio Desempate']];
+      st.forEach((r, idx) => {
+        rows.push([idx + 1, r.name, r.delegate, r.jj, r.jg, r.jp, r.tf, r.tc, r.dif, r.ave.toFixed(3), r.pts, r.tieBreakerNote]);
+      });
+      downloadCSV('Clasificacion_APC_Turmero.csv', rows);
+    }
+
+    function exportStatsCSV() {
+      const st = calculatePlayerStats();
+      const rows = [['Jugador', 'Numero', 'Rol', 'Equipo', 'Arrimes Intentos', 'Arrimes Buenos', 'AVG Arrime', 'Rastreros Intentos', 'Rastreros Efectivos', 'AVG Rastrero', 'Aereos Intentos', 'Aereos Efectivos', 'AVG Aereo', 'Total Boches Int', 'Total Boches Efec', 'AVG Boche General', 'AVG General']];
+      st.forEach(s => {
+        rows.push([
+          s.name, s.number, s.role, s.teamName,
+          s.arrimeAtt, s.arrimeGood, s.arrimeAvg.toFixed(3),
+          s.rastreroAtt, s.rastreroGood, s.rastreroAvg.toFixed(3),
+          s.aereoAtt, s.aereoGood, s.aereoAvg.toFixed(3),
+          s.bocheTotalAtt, s.bocheTotalGood, s.bocheTotalAvg.toFixed(3),
+          s.totalAvg.toFixed(3)
+        ]);
+      });
+      downloadCSV('Estadisticas_Individuales_APC_Turmero.csv', rows);
+    }
+
+    function downloadJSONBackup() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Respaldo_Torneo_APC_Turmero_${formatDateISO(new Date())}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Respaldo JSON descargado.', 'success');
+    }
+
+    function importJSONBackup(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          if (!imported.teams || !imported.matches) throw new Error('Formato inválido');
+          state = { ...DEFAULT_STATE, ...imported };
+          saveState();
+          closeModal();
+          renderAll();
+          showToast('Datos del torneo restaurados correctamente.', 'success');
+        } catch (err) {
+          showToast('El archivo JSON no tiene un formato válido.', 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /***************************************************************************
+     * 9. UTILIDADES UI (TOASTS Y ESCAPE HTML)
+     ***************************************************************************/
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const colors = {
+        success: 'bg-emerald-900 text-white border-emerald-700',
+        error: 'bg-rose-900 text-white border-rose-700',
+        info: 'bg-slate-900 text-white border-slate-700'
+      };
+      const el = document.createElement('div');
+      el.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg border text-xs font-bold flex items-center justify-between gap-3 transition-all ${colors[type] || colors.info}`;
+      el.innerHTML = `<span>${escapeHtml(message)}</span>`;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300);
+      }, 3400);
+    }
+
+    // Inicialización al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAll();
+    });
+  </script>
+</body>
+</html>

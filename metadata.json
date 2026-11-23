@@ -1,0 +1,6 @@
+{
+  "name": "Torneo Bolas Criollas APC Turmero",
+  "description": "Sistema oficial de gestión de torneos de Bolas Criollas para el Complejo Deportivo APC Turmero: calendario equilibrado en 4 canchas, tabla de posiciones con desempate oficial, planillas de equipos y estadísticas individuales.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
